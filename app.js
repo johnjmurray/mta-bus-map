@@ -1,6 +1,6 @@
 const ROUTES_URL = 'https://data.ny.gov/resource/bzwk-3hb4.json';
 const STOPS_URL = 'https://data.ny.gov/resource/2ucp-7wg5.json';
-const VEHICLE_REFRESH_MS = 15_000;
+const VEHICLE_REFRESH_MS = 300_000;
 
 const els = {
   search: document.querySelector('#route-search'),
