@@ -14,25 +14,20 @@
   <body>
     <main class="app-shell">
       <aside class="sidebar" aria-label="Map controls">
-        <header class="brand">
-          <div class="brand-mark" aria-hidden="true"><span></span><span></span></div>
-          <div><p class="eyebrow">NEW YORK CITY</p><h1>Bus tracker</h1></div>
-        </header>
+        <header class="brand"><div class="brand-mark" aria-hidden="true"><span></span><span></span></div><div><p class="eyebrow">NEW YORK CITY</p><h1>Bus tracker</h1></div></header>
         <section class="intro"><p>Explore MTA bus routes, stops, and vehicles moving across the city.</p></section>
-        <section class="control-section">
-          <label class="field-label" for="route-search">Find a route</label>
+        <section class="control-section route-section">
+          <label class="field-label" for="route-search">Find and select routes</label>
           <div class="search-wrap"><span aria-hidden="true">⌕</span><input id="route-search" type="search" placeholder="Search route or destination" autocomplete="off"></div>
-          <label class="sr-only" for="route-select">Select a route</label>
-          <select id="route-select"><option value="">All routes</option></select>
+          <button id="select-ace" class="ace-button" type="button">Select all ACE routes</button>
+          <div id="route-list" class="route-list" role="group" aria-label="Available bus routes"></div>
+          <h3 class="route-style-heading">Selected route styles</h3>
+          <div id="route-styles" class="route-styles"></div>
         </section>
         <section class="control-section key-section">
           <h2 class="section-title">Live bus access</h2>
           <p>Enter your MTA Bus Time API key to enable live positions. It is used only for this visit.</p>
-          <form id="api-key-form">
-            <label class="sr-only" for="api-key">MTA Bus Time API key</label>
-            <input id="api-key" type="password" placeholder="MTA Bus Time API key" autocomplete="off" required>
-            <button type="submit" class="refresh-button key-submit">Use key for this visit</button>
-          </form>
+          <form id="api-key-form"><label class="sr-only" for="api-key">MTA Bus Time API key</label><input id="api-key" type="password" placeholder="MTA Bus Time API key" autocomplete="off" required><button type="submit" class="refresh-button key-submit">Use key for this visit</button></form>
           <button id="clear-key" class="text-button" type="button" hidden>Clear key</button>
         </section>
         <section class="control-section layers-section">
@@ -41,21 +36,13 @@
           <label class="layer-row"><span class="layer-symbol stop-symbol" aria-hidden="true"></span><span class="layer-copy"><strong>Bus stops</strong><small>All stops remain visible</small></span><input id="toggle-stops" type="checkbox" checked><span class="switch" aria-hidden="true"></span></label>
           <label class="layer-row"><span class="layer-symbol vehicle-symbol" aria-hidden="true"></span><span class="layer-copy"><strong>Live buses</strong><small>Refreshes every 5 minutes</small></span><input id="toggle-vehicles" type="checkbox" checked><span class="switch" aria-hidden="true"></span></label>
         </section>
-        <section class="stats" aria-label="Map data counts">
-          <div><strong id="route-count">—</strong><span>routes</span></div><div><strong id="stop-count">—</strong><span>stops</span></div><div><strong id="vehicle-count">—</strong><span>buses</span></div>
-        </section>
-        <section class="feed-status" aria-live="polite">
-          <span id="status-indicator" class="status-dot loading"></span>
-          <div><strong id="status-title">Connecting to MTA data</strong><p id="status-message">Loading route and stop information…</p></div>
-        </section>
+        <section class="stats" aria-label="Map data counts"><div><strong id="route-count">—</strong><span>routes</span></div><div><strong id="stop-count">—</strong><span>stops</span></div><div><strong id="vehicle-count">—</strong><span>buses</span></div></section>
+        <section class="feed-status" aria-live="polite"><span id="status-indicator" class="status-dot loading"></span><div><strong id="status-title">Connecting to MTA data</strong><p id="status-message">Loading route and stop information…</p></div></section>
         <button id="refresh-button" class="refresh-button" type="button"><span aria-hidden="true">↻</span> Refresh data</button>
         <footer><span class="live-pulse"></span> Live map <span class="footer-divider">·</span> NYC buses</footer>
       </aside>
       <section class="map-panel" aria-label="Map of MTA buses">
-        <div class="map-topbar">
-          <div><span class="map-kicker">MTA BUS NETWORK</span><strong id="map-heading">New York City</strong></div>
-          <div class="updated-label"><span class="live-pulse"></span><span id="last-updated">Starting map…</span></div>
-        </div>
+        <div class="map-topbar"><div><span class="map-kicker">MTA BUS NETWORK</span><strong id="map-heading">New York City</strong></div><div class="updated-label"><span class="live-pulse"></span><span id="last-updated">Starting map…</span></div></div>
         <div id="map" role="application" aria-label="Interactive map showing MTA bus routes, stops, and vehicle positions"></div>
         <div class="map-attribution-note">Map data © OpenStreetMap contributors © CARTO</div>
       </section>

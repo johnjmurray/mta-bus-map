@@ -1,6 +1,12 @@
 # MTA Bus Map
 
-A static interactive map of active MTA bus routes, stops, and live bus positions. It can be hosted on GitHub Pages and does not require Node.js or a server to run.
+A static interactive map of active MTA bus routes, stops, and live bus positions, suitable for GitHub Pages.
+
+## Route selection and styling
+
+Search routes and check one or more entries to display their route shapes and filter live buses. Use **Select all ACE routes** to fetch the ACE program route list from NY Open Data (`ki2b-sg5y`) and select the matching active route shapes. Each selected route has its own color picker and opacity slider. These style choices apply to the map for the current page session.
+
+Bus stops remain visible regardless of route selection, and stop tooltips list all routes serving each stop.
 
 ## Live bus access and privacy
 
@@ -13,9 +19,5 @@ In repository **Settings → Pages**, choose the publishing source/branch and fo
 ## Data and behavior
 
 - Active route shapes and stop information load from NY Open Data Socrata datasets when the page starts and when **Refresh data** is clicked.
-- Live bus positions come directly from the MTA Bus Time SIRI vehicle-monitoring API after a visitor provides a key. The feed refreshes every five minutes; selecting a route filters its route line and live vehicles, while all bus stops remain visible.
-- Bus stop tooltips list the routes serving each stop, combining route records for stops served by multiple routes.
-- Search and select routes to focus the map. Route, stop, and bus layers can be toggled independently.
-- Leaflet displays a grayscale CARTO basemap with a dark, squared-off control theme.
-
-An internet connection is required for the map tiles, Leaflet CDN, public route/stop datasets, and (if enabled) MTA live feed. Browser access to the MTA API depends on its CORS policy; if the API does not permit cross-origin requests from the Pages origin, direct browser access will fail and a separate server-side proxy will be needed.
+- Live bus positions come directly from the MTA Bus Time SIRI vehicle-monitoring API after a visitor provides a key. The feed refreshes every five minutes. For a single selection the request is route-filtered; multiple selections fetch the feed and filter returned buses in the browser.
+- Leaflet displays a grayscale CARTO basemap with a dark, squared-off control theme. An internet connection is required. Direct browser access to the MTA API depends on its CORS policy; if the API does not permit cross-origin requests from the Pages origin, a separate server-side proxy will be needed.
