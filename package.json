@@ -1,0 +1,12 @@
+{
+  "name": "mta-bus-map",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Interactive map of MTA bus routes, stops, and live vehicle positions.",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
