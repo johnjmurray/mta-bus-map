@@ -46,10 +46,9 @@ function routeName(record) {
 }
 
 function requestUrl(base, fields, where) {
-  const query = `SELECT ${fields.map((field) => `\`${field}\``).join(', ')} WHERE ${where}`;
+  const query = `SELECT ${fields.map((field) => `\`${field}\``).join(', ')} WHERE ${where} LIMIT 50000`;
   const url = new URL(base);
   url.searchParams.set('$query', query);
-  url.searchParams.set('$limit', '50000');
   return url;
 }
 
