@@ -4,7 +4,7 @@ A static interactive map of active MTA bus routes, stops, and live bus positions
 
 ## Route selection and styling
 
-Search routes and check one or more entries to display their route shapes and filter live buses. Use **Select all ACE routes** to fetch the ACE program route list from NY Open Data (`ki2b-sg5y`) and select the matching active route shapes. Each selected route has its own color picker and opacity slider. These style choices apply to the map for the current page session.
+Search routes and check one or more entries to display their route shapes and filter live buses. Use **Select all routes** or **Select no routes** to quickly update the selection. Use **Select all ACE routes** to fetch the ACE program route list from NY Open Data (`ki2b-sg5y`) and select the matching active route shapes. Each specifically selected route has its own color picker and opacity slider. These style choices apply to the map for the current page session.
 
 Bus stops remain visible regardless of route selection, and stop tooltips list all routes serving each stop.
 
@@ -20,4 +20,4 @@ In repository **Settings → Pages**, choose the publishing source/branch and fo
 
 - Active route shapes and stop information load from NY Open Data Socrata datasets when the page starts and when **Refresh data** is clicked.
 - Live bus positions come directly from the MTA Bus Time SIRI vehicle-monitoring API after a visitor provides a key. The feed refreshes every five minutes. For a single selection the request is route-filtered; multiple selections fetch the feed and filter returned buses in the browser.
-- Leaflet displays a grayscale CARTO basemap with a dark, squared-off control theme. An internet connection is required. Direct browser access to the MTA API depends on its CORS policy; if the API does not permit cross-origin requests from the Pages origin, a separate server-side proxy will be needed.
+- Leaflet displays the standard OpenStreetMap basemap with a dark, squared-off control theme. An internet connection is required. Direct browser access to the MTA API depends on its CORS policy; if the API does not permit cross-origin requests from the Pages origin, a separate server-side proxy will be needed.

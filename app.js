@@ -7,6 +7,7 @@ const VEHICLE_REFRESH_MS = 300_000;
 const els = {
   search: document.querySelector('#route-search'), routeList: document.querySelector('#route-list'),
   routeStyles: document.querySelector('#route-styles'), selectAce: document.querySelector('#select-ace'),
+  selectAllRoutes: document.querySelector('#select-all-routes'), selectNoRoutes: document.querySelector('#select-no-routes'),
   routes: document.querySelector('#toggle-routes'), stops: document.querySelector('#toggle-stops'), vehicles: document.querySelector('#toggle-vehicles'),
   routeCount: document.querySelector('#route-count'), stopCount: document.querySelector('#stop-count'), vehicleCount: document.querySelector('#vehicle-count'),
   statusDot: document.querySelector('#status-indicator'), statusTitle: document.querySelector('#status-title'),
@@ -17,15 +18,15 @@ const els = {
 
 const map = L.map('map', { zoomControl: false, preferCanvas: true }).setView([40.7128, -73.95], 11);
 L.control.zoom({ position: 'bottomright' }).addTo(map);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-  maxZoom: 20,
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 }).addTo(map);
 
 const routeLayer = L.featureGroup().addTo(map);
 const stopLayer = L.layerGroup().addTo(map);
 const vehicleLayer = L.layerGroup().addTo(map);
-const state = { routes: [], stops: [], vehicles: [], selectedRoutes: new Set(), routeLines: [], routeStyles: new Map(), apiKey: '' };
+const state = { routes: [], stops: [], vehicles: [], selectedRoutes: new Set(), allRoutesSelected: true, routeLines: [], routeStyles: new Map(), apiKey: '' };
 
 function setStatus(title, message, kind = 'loading') {
   els.statusTitle.textContent = title;
@@ -94,11 +95,16 @@ function renderRoutePicker() {
     const label = document.createElement('label');
     label.className = 'route-option';
     const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox'; checkbox.value = name; checkbox.checked = state.selectedRoutes.has(name);
+    checkbox.type = 'checkbox'; checkbox.value = name;
+    checkbox.checked = state.allRoutesSelected || state.selectedRoutes.has(name);
     checkbox.addEventListener('change', () => {
+      if (state.allRoutesSelected) {
+        state.selectedRoutes = new Set(sortedRouteNames());
+        state.allRoutesSelected = false;
+      }
       if (checkbox.checked) state.selectedRoutes.add(name);
       else state.selectedRoutes.delete(name);
-      applyFilters();
+      renderRoutePicker(); applyFilters();
       loadVehicles();
     });
     const text = document.createElement('span'); text.textContent = name;
@@ -109,7 +115,8 @@ function renderRoutePicker() {
 function renderRouteStyles() {
   els.routeStyles.replaceChildren();
   if (!state.selectedRoutes.size) {
-    const note = document.createElement('p'); note.className = 'route-style-empty'; note.textContent = 'Select route(s) to customize line color and opacity.';
+    const note = document.createElement('p'); note.className = 'route-style-empty';
+    note.textContent = state.allRoutesSelected ? 'Select specific routes to customize line color and opacity.' : 'No routes selected.';
     els.routeStyles.append(note); return;
   }
   for (const route of [...state.selectedRoutes].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))) {
@@ -122,7 +129,8 @@ function renderRouteStyles() {
     colorLabel.append(colorInput);
     const opacityLabel = document.createElement('label'); opacityLabel.className = 'opacity-control';
     const opacityText = document.createElement('span'); opacityText.textContent = `Opacity ${Math.round(style.opacity * 100)}%`;
-    const opacityInput = document.createElement('input'); opacityInput.type = 'range'; opacityInput.min = '10'; opacityInput.max = '100'; opacityInput.value = String(Math.round(style.opacity * 100)); opacityInput.setAttribute('aria-label', `${route} line opacity`);
+    const opacityInput = document.createElement('input'); opacityInput.type = 'range'; opacityInput.min = '10'; opacityInput.max = '100'; opacityInput.value = String(Math.round(style.opacity * 100));
+    opacityInput.setAttribute('aria-label', `${route} line opacity`);
     opacityInput.addEventListener('input', () => { style.opacity = Number(opacityInput.value) / 100; opacityText.textContent = `Opacity ${opacityInput.value}%`; drawRoutes(); });
     opacityLabel.append(opacityText, opacityInput);
     row.append(name, colorLabel, opacityLabel); els.routeStyles.append(row);
@@ -132,11 +140,11 @@ function drawRoutes() {
   routeLayer.clearLayers(); state.routeLines = [];
   for (const route of state.routes) {
     const name = routeName(route);
-    if (state.selectedRoutes.size && !state.selectedRoutes.has(name)) continue;
+    if (!state.allRoutesSelected && !state.selectedRoutes.has(name)) continue;
     const lines = normalizeLines(geometryCoordinates(route));
     if (!lines.length) continue;
     const style = ensureRouteStyle(name);
-    const line = L.featureGroup(lines.map((latlngs) => L.polyline(latlngs, { color: style.color, weight: state.selectedRoutes.size ? 5 : 3, opacity: style.opacity, lineCap: 'round', lineJoin: 'round' })));
+    const line = L.featureGroup(lines.map((latlngs) => L.polyline(latlngs, { color: style.color, weight: state.allRoutesSelected ? 3 : 5, opacity: style.opacity, lineCap: 'round', lineJoin: 'round' })));
     line.bindPopup(`<strong>${escapeHtml(name)}</strong><br>${escapeHtml(route.route_long_name || 'MTA bus route')}`);
     line.addTo(routeLayer); state.routeLines.push(line);
   }
@@ -192,7 +200,7 @@ function drawVehicles() {
   vehicleLayer.clearLayers(); let count = 0;
   for (const vehicle of state.vehicles) {
     const route = vehicle.route.replace(/^.*:/, '');
-    if (state.selectedRoutes.size && ![...state.selectedRoutes].some((name) => routeKey(name) === routeKey(route))) continue;
+    if (!state.allRoutesSelected && ![...state.selectedRoutes].some((name) => routeKey(name) === routeKey(route))) continue;
     L.circleMarker([vehicle.latitude, vehicle.longitude], { radius: 7, color: '#ffffff', weight: 2, fillColor: '#e4443a', fillOpacity: 1 })
       .bindPopup(`<strong>Bus ${escapeHtml(route)}</strong><br>${escapeHtml(vehicle.destination || 'Destination unavailable')}<br>Vehicle ${escapeHtml(vehicle.vehicle || '—')}`).addTo(vehicleLayer);
     count++;
@@ -207,13 +215,15 @@ function syncLayers() {
 }
 function applyFilters() {
   drawRoutes(); drawStops(); drawVehicles(); syncLayers();
-  if (state.selectedRoutes.size) {
+  if (state.allRoutesSelected) {
+    els.mapHeading.textContent = 'New York City';
+  } else if (state.selectedRoutes.size) {
     const selectedNames = [...state.selectedRoutes];
     const selectedLines = state.routeLines.flatMap((group) => group.getLayers());
     if (selectedLines.length) { const bounds = L.featureGroup(selectedLines).getBounds(); if (bounds.isValid()) map.fitBounds(bounds, { padding: [35, 35], maxZoom: 14 }); }
     els.mapHeading.textContent = selectedNames.length <= 3 ? selectedNames.join(', ') : `${selectedNames.length} routes selected`;
   } else {
-    els.mapHeading.textContent = 'New York City';
+    els.mapHeading.textContent = 'No routes selected';
   }
   renderRouteStyles();
 }
@@ -256,13 +266,23 @@ async function selectAceRoutes() {
       setStatus('No ACE routes matched', 'The ACE dataset loaded, but no route names matched the active route shapes.', 'error');
       return;
     }
-    state.selectedRoutes = new Set(matches);
+    state.selectedRoutes = new Set(matches); state.allRoutesSelected = false;
     els.search.value = '';
     renderRoutePicker(); applyFilters(); await loadVehicles();
     setStatus('ACE routes selected', `${matches.length} active route shapes matched the ACE program dataset.`, 'success');
   } catch (error) {
     setStatus('ACE route list unavailable', `Could not load ACE routes: ${error.message}`, 'error');
   } finally { els.selectAce.disabled = false; }
+}
+function selectAllRoutes() {
+  state.allRoutesSelected = true;
+  state.selectedRoutes.clear();
+  renderRoutePicker(); applyFilters(); loadVehicles();
+}
+function selectNoRoutes() {
+  state.allRoutesSelected = false;
+  state.selectedRoutes.clear();
+  renderRoutePicker(); applyFilters(); loadVehicles();
 }
 async function loadVehicles() {
   if (!state.apiKey) {
@@ -274,7 +294,7 @@ async function loadVehicles() {
     const url = new URL(VEHICLE_ENDPOINT);
     url.searchParams.set('key', state.apiKey);
     url.searchParams.set('VehicleMonitoringDetailLevel', 'minimum');
-    if (state.selectedRoutes.size === 1) url.searchParams.set('LineRef', [...state.selectedRoutes][0]);
+    if (!state.allRoutesSelected && state.selectedRoutes.size === 1) url.searchParams.set('LineRef', [...state.selectedRoutes][0]);
     const payload = await fetchJson(url);
     state.vehicles = extractVehicles(payload); drawVehicles(); syncLayers();
     if (state.routes.length || state.stops.length) setStatus('MTA network loaded', 'Routes, stops, and live buses are updating.', 'success');
@@ -287,6 +307,8 @@ async function loadVehicles() {
 }
 els.search.addEventListener('input', renderRoutePicker);
 els.selectAce.addEventListener('click', selectAceRoutes);
+els.selectAllRoutes.addEventListener('click', selectAllRoutes);
+els.selectNoRoutes.addEventListener('click', selectNoRoutes);
 [els.routes, els.stops, els.vehicles].forEach((checkbox) => checkbox.addEventListener('change', syncLayers));
 els.keyForm.addEventListener('submit', async (event) => {
   event.preventDefault();

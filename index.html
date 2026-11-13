@@ -7,7 +7,6 @@
     <title>MTA Bus Map</title>
     <link rel="preconnect" href="https://unpkg.com">
     <link rel="preconnect" href="https://data.ny.gov">
-    <link rel="preconnect" href="https://basemaps.cartocdn.com">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
     <link rel="stylesheet" href="styles.css">
   </head>
@@ -19,6 +18,8 @@
         <section class="control-section route-section">
           <label class="field-label" for="route-search">Find and select routes</label>
           <div class="search-wrap"><span aria-hidden="true">⌕</span><input id="route-search" type="search" placeholder="Search route or destination" autocomplete="off"></div>
+          <button id="select-all-routes" class="ace-button" type="button">Select all routes</button>
+          <button id="select-no-routes" class="ace-button" type="button">Select no routes</button>
           <button id="select-ace" class="ace-button" type="button">Select all ACE routes</button>
           <div id="route-list" class="route-list" role="group" aria-label="Available bus routes"></div>
           <h3 class="route-style-heading">Selected route styles</h3>
@@ -27,7 +28,7 @@
         <section class="control-section key-section">
           <h2 class="section-title">Live bus access</h2>
           <p>Enter your MTA Bus Time API key to enable live positions. It is used only for this visit.</p>
-          <form id="api-key-form"><label class="sr-only" for="api-key">MTA Bus Time API key</label><input id="api-key" type="password" placeholder="MTA Bus Time API key" autocomplete="off" required><button type="submit" class="refresh-button key-submit">Use key for this visit</button></form>
+          <form id="api-key-form"><label class="sr-only" for="api-key">MTA Bus Time API key</label><input id="api-key" type="password" placeholder="MTA Bus Time API key" autocomplete="off" required><button class="refresh-button" type="submit">Load live buses</button></form>
           <button id="clear-key" class="text-button" type="button" hidden>Clear key</button>
         </section>
         <section class="control-section layers-section">
@@ -44,7 +45,7 @@
       <section class="map-panel" aria-label="Map of MTA buses">
         <div class="map-topbar"><div><span class="map-kicker">MTA BUS NETWORK</span><strong id="map-heading">New York City</strong></div><div class="updated-label"><span class="live-pulse"></span><span id="last-updated">Starting map…</span></div></div>
         <div id="map" role="application" aria-label="Interactive map showing MTA bus routes, stops, and vehicle positions"></div>
-        <div class="map-attribution-note">Map data © OpenStreetMap contributors © CARTO</div>
+        <div class="map-attribution-note">Map data © OpenStreetMap contributors</div>
       </section>
     </main>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
