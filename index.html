@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#101d2c">
+    <meta name="theme-color" content="#101419">
     <title>MTA Bus Map</title>
     <link rel="preconnect" href="https://unpkg.com">
     <link rel="preconnect" href="https://data.ny.gov">
@@ -27,18 +27,18 @@
         </section>
         <section class="control-section key-section">
           <h2 class="section-title">Live bus access</h2>
-          <p>Enter your own MTA Bus Time API key. It is used only in this page session and is not saved.</p>
+          <p>Enter your MTA Bus Time API key to enable live positions. It is used only for this visit.</p>
           <form id="api-key-form">
             <label class="sr-only" for="api-key">MTA Bus Time API key</label>
             <input id="api-key" type="password" placeholder="MTA Bus Time API key" autocomplete="off" required>
-            <button type="submit" class="refresh-button">Use key for this visit</button>
+            <button type="submit" class="refresh-button key-submit">Use key for this visit</button>
           </form>
           <button id="clear-key" class="text-button" type="button" hidden>Clear key</button>
         </section>
         <section class="control-section layers-section">
           <h2 class="section-title">Map layers</h2>
           <label class="layer-row"><span class="layer-symbol route-symbol" aria-hidden="true"></span><span class="layer-copy"><strong>Routes</strong><small>Active route shapes</small></span><input id="toggle-routes" type="checkbox" checked><span class="switch" aria-hidden="true"></span></label>
-          <label class="layer-row"><span class="layer-symbol stop-symbol" aria-hidden="true"></span><span class="layer-copy"><strong>Bus stops</strong><small>Boarding locations</small></span><input id="toggle-stops" type="checkbox" checked><span class="switch" aria-hidden="true"></span></label>
+          <label class="layer-row"><span class="layer-symbol stop-symbol" aria-hidden="true"></span><span class="layer-copy"><strong>Bus stops</strong><small>All stops remain visible</small></span><input id="toggle-stops" type="checkbox" checked><span class="switch" aria-hidden="true"></span></label>
           <label class="layer-row"><span class="layer-symbol vehicle-symbol" aria-hidden="true"></span><span class="layer-copy"><strong>Live buses</strong><small>Refreshes every 5 minutes</small></span><input id="toggle-vehicles" type="checkbox" checked><span class="switch" aria-hidden="true"></span></label>
         </section>
         <section class="stats" aria-label="Map data counts">

@@ -23,7 +23,7 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
 const routeLayer = L.featureGroup().addTo(map);
 const stopLayer = L.layerGroup().addTo(map);
 const vehicleLayer = L.layerGroup().addTo(map);
-const state = { routes: [], stops: [], vehicles: [], selectedRoute: '', routeLines: [], vehicleError: '', apiKey: '' };
+const state = { routes: [], stops: [], vehicles: [], selectedRoute: '', routeLines: [], apiKey: '' };
 
 function setStatus(title, message, kind = 'loading') {
   els.statusTitle.textContent = title;
@@ -95,14 +95,32 @@ function stopLatLng(stop) {
   const longitude = Number(stop.longitude ?? stop.georeference?.coordinates?.[0]);
   return Number.isFinite(latitude) && Number.isFinite(longitude) && latitude !== 0 && longitude !== 0 ? [latitude, longitude] : null;
 }
-function drawStops() {
-  stopLayer.clearLayers();
+function stopsWithRoutes() {
+  const grouped = new Map();
   for (const stop of state.stops) {
-    if (!matchesSelectedRoute(stop)) continue;
     const latlng = stopLatLng(stop);
     if (!latlng) continue;
-    L.circleMarker(latlng, { radius: 3.2, color: '#fff', weight: 1.2, fillColor: '#25364a', fillOpacity: 0.9 })
-      .bindPopup(`<strong>${escapeHtml(stop.stop_name || 'Bus stop')}</strong><br>Stop ${escapeHtml(stop.stop_id || '—')} · Route ${escapeHtml(routeName(stop))}`).addTo(stopLayer);
+    const key = stop.stop_id ? `id:${stop.stop_id}` : `loc:${latlng.join(',')}:${stop.stop_name || ''}`;
+    let entry = grouped.get(key);
+    if (!entry) {
+      entry = { ...stop, latlng, servedRoutes: new Set() };
+      grouped.set(key, entry);
+    }
+    const route = String(stop.route_short_name || stop.route_id || '').trim();
+    if (route) entry.servedRoutes.add(route);
+  }
+  return [...grouped.values()];
+}
+function drawStops() {
+  stopLayer.clearLayers();
+  // Route selection intentionally does not filter stop markers: the whole stop network stays visible.
+  for (const stop of stopsWithRoutes()) {
+    const routes = [...stop.servedRoutes].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    const routeText = routes.length ? routes.map(escapeHtml).join(', ') : 'Not specified';
+    const marker = L.circleMarker(stop.latlng, { radius: 3.2, color: '#ffffff', weight: 1.2, fillColor: '#25364a', fillOpacity: 0.9 });
+    marker.bindTooltip(`<strong>${escapeHtml(stop.stop_name || 'Bus stop')}</strong><br>Stop ${escapeHtml(stop.stop_id || '—')}<br>Routes: ${routeText}`, { direction: 'top', opacity: 0.96 });
+    marker.bindPopup(`<strong>${escapeHtml(stop.stop_name || 'Bus stop')}</strong><br>Stop ${escapeHtml(stop.stop_id || '—')}<br>Routes: ${routeText}`);
+    marker.addTo(stopLayer);
   }
 }
 function findValue(object, names) {
@@ -127,7 +145,7 @@ function drawVehicles() {
   for (const vehicle of state.vehicles) {
     const route = vehicle.route.replace(/^.*:/, '');
     if (state.selectedRoute && route.toLowerCase() !== state.selectedRoute.toLowerCase()) continue;
-    L.circleMarker([vehicle.latitude, vehicle.longitude], { radius: 7, color: '#fff', weight: 2, fillColor: '#e4443a', fillOpacity: 1 })
+    L.circleMarker([vehicle.latitude, vehicle.longitude], { radius: 7, color: '#ffffff', weight: 2, fillColor: '#e4443a', fillOpacity: 1 })
       .bindPopup(`<strong>Bus ${escapeHtml(route)}</strong><br>${escapeHtml(vehicle.destination || 'Destination unavailable')}<br>Vehicle ${escapeHtml(vehicle.vehicle || '—')}`).addTo(vehicleLayer);
     count++;
   }
@@ -179,7 +197,7 @@ async function loadNetworkData() {
   if (routeResult.status === 'rejected' && stopResult.status === 'rejected') { setStatus('Network data unavailable', 'Could not load routes or stops. Check your connection and retry.', 'error'); throw routeResult.reason; }
   populateRouteSelect();
   els.routeCount.textContent = String(new Set(state.routes.map(routeName)).size);
-  els.stopCount.textContent = String(state.stops.length);
+  els.stopCount.textContent = String(stopsWithRoutes().length);
   updateRouteOptions(els.search.value);
   const errors = [];
   if (routeResult.status === 'rejected') errors.push('Routes could not be loaded');
