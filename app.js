@@ -235,7 +235,7 @@ async function fetchJson(url) {
 async function loadNetworkData() {
   setStatus('Loading MTA network', 'Fetching active routes and bus stops…');
   const routeFields = ['valid_from', 'valid_to', 'in_effect', 'route_id', 'route_short_name', 'route_long_name', 'route_description', 'trip_type', 'route_type', 'bundle', 'route_color', 'direction_id', 'geometry', 'vertices'];
-  const stopFields = ['valid_from', 'valid_to', 'in_effect', 'route_id', 'route_short_name', 'route_long_name', 'route_description', 'route_color', 'stop_id', 'stop_name', 'direction_id', 'direction_name', 'latitude', 'longitude', 'georeference'];
+  const stopFields = ['valid_from', 'valid_to', 'in_effect', 'route_id', 'route_short_name', 'route_long_name', 'route_description', 'route_color', 'stop_id', 'stop_name', 'direction_id', 'latitude', 'longitude', 'georeference'];
   const [routeResult, stopResult] = await Promise.allSettled([
     fetchJson(requestUrl(ROUTES_URL, routeFields, 'caseless_one_of(`in_effect`, "true") AND `trip_type` IN ("1")')),
     fetchJson(requestUrl(STOPS_URL, stopFields, 'caseless_one_of(`in_effect`, "true")'))
