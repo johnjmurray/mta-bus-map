@@ -202,7 +202,7 @@ function drawVehicles() {
     const route = vehicle.route.replace(/^.*:/, '');
     if (!state.allRoutesSelected && ![...state.selectedRoutes].some((name) => routeKey(name) === routeKey(route))) continue;
     L.circleMarker([vehicle.latitude, vehicle.longitude], { radius: 7, color: '#ffffff', weight: 2, fillColor: '#e4443a', fillOpacity: 1 })
-      .bindPopup(`<strong>Bus ${escapeHtml(route)}</strong><br>${escapeHtml(vehicle.destination || 'Destination unavailable')}<br>Vehicle ${escapeHtml(vehicle.vehicle || '—')}`).addTo(vehicleLayer);
+      .bindPopup(`<strong>Bus ${escapeHtml(vehicle.vehicle || '—')}</strong><br>${escapeHtml(vehicle.destination || 'Destination unavailable')}<br>Route ${escapeHtml(route)}`).addTo(vehicleLayer);
     count++;
   }
   els.vehicleCount.textContent = String(count);
