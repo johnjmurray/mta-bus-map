@@ -1,25 +1,23 @@
 # MTA Bus Map
 
-A small interactive web app for exploring active MTA bus routes, stops, and live bus positions on a map.
+A static interactive map of active MTA bus routes, stops, and live bus positions, suitable for GitHub Pages.
 
-## Run locally
+## Route selection and styling
 
-Requires Node.js 18 or newer. No npm dependencies are needed.
+Search routes and check one or more entries to display their route shapes and filter live buses. Use **Select all ACE routes** to fetch the ACE program route list from NY Open Data (`ki2b-sg5y`) and select the matching active route shapes. Each selected route has its own color picker and opacity slider. These style choices apply to the map for the current page session.
 
-```sh
-# Configure the MTA Bus Time key for the live vehicle feed.
-MTA_API_KEY=your_mta_key npm start
-```
+Bus stops remain visible regardless of route selection, and stop tooltips list all routes serving each stop.
 
-Then open [http://localhost:3000](http://localhost:3000). On PowerShell, set the key first with `$env:MTA_API_KEY="your_mta_key"` and run `npm start`.
+## Live bus access and privacy
 
-The key is read by the local server and is not embedded in browser code. The key supplied in a chat request is intentionally not committed to this repository; configure your own key in the server environment. Routes and stops are fetched directly from the public NY Open Data Socrata datasets. Live bus locations refresh every 15 seconds.
+Live bus tracking is optional. A visitor enters their own MTA Bus Time API key in the page to enable it. The key stays in page memory for that visit and is cleared on reload or with **Clear key**; it is not stored in local storage, cookies, or this repository. Requests go directly from the visitor's browser to MTA, so the key is visible to that visitor. Do not enter a key unless you are authorized to use it. The Codespaces secret is not available to GitHub Pages.
 
-## Map controls
+## Deploy to GitHub Pages
 
-- Search or select a route to focus the map and filter its stops and vehicles.
-- Toggle route, stop, and live vehicle layers independently.
-- Select a route line or marker to view route and stop details.
-- Use **Refresh data** to reload routes and stops. The live feed continues to refresh automatically.
+In repository **Settings → Pages**, choose the publishing source/branch and folder containing `index.html`, then save. The site is static; no build step or npm installation is required.
 
-The map uses Leaflet and OpenStreetMap tiles via public CDNs/services, so an internet connection is required. If the live feed is unavailable, the route and stop layers remain usable and the live-feed error is shown in the status panel.
+## Data and behavior
+
+- Active route shapes and stop information load from NY Open Data Socrata datasets when the page starts and when **Refresh data** is clicked.
+- Live bus positions come directly from the MTA Bus Time SIRI vehicle-monitoring API after a visitor provides a key. The feed refreshes every five minutes. For a single selection the request is route-filtered; multiple selections fetch the feed and filter returned buses in the browser.
+- Leaflet displays a grayscale CARTO basemap with a dark, squared-off control theme. An internet connection is required. Direct browser access to the MTA API depends on its CORS policy; if the API does not permit cross-origin requests from the Pages origin, a separate server-side proxy will be needed.
