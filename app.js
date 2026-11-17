@@ -4,7 +4,7 @@ const ACE_URL = 'https://data.ny.gov/resource/ki2b-sg5y.json';
 const VEHICLE_ENDPOINT = 'https://bustime-classic.mta.info/api/siri/vehicle-monitoring.json';
 const VEHICLE_REFRESH_MS = 300_000;
 
-onst els = {
+const els = {
   search: document.querySelector('#route-search'),
   busSearch: document.querySelector('#bus-search'),
   routeList: document.querySelector('#route-list'),
