@@ -13,7 +13,7 @@ export const VEHICLE_ROUTE_COLORS = {
   M: '#2d8cff', Q: '#ff8a3d', BX: '#7a5cff', B: '#3ecf8e', S: '#e86f6f',
   QM: '#ffb703', BXM: '#6c63ff', X: '#f15bb5', SIM: '#7dd3fc', DEFAULT: '#f7f7f7'
 };
-export const AGENCY_COLORS = { NYCT: '#3fa9f5', MTABC: '#e76f51', DEFAULT: '#dfe6ee' };
+export const AGENCY_COLORS = { NYCT: '#111111', MTABC: '#ffffff', DEFAULT: '#dfe6ee' };
 export const ROUTE_PREFIX_PATTERN = /^(BXM|QM|SIM|BX|M|Q|B|S|X)(?=\d|\s|_|-|$)/i;
 
 export const els = {
