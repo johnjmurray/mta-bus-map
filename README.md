@@ -14,12 +14,11 @@ Live bus tracking is optional. A visitor enters their own MTA Bus Time API key i
 
 - Active route shapes and stop information load from NY Open Data Socrata datasets when the page starts and when **Refresh data** is clicked.
 - Live bus positions come directly from the MTA Bus Time SIRI vehicle-monitoring API after a visitor provides a key. The feed refreshes every five minutes. For a single selection the request is route-filtered; multiple selections fetch the feed and filter returned buses in the browser.
+- Bus markers point in the direction of travel, use a fill color based on the route prefix, and use an outline color based on the NYCT or MTABC agency.
+- Bus tooltips show the fleet number, route name, agency, and destination. Use **Find bus number** to highlight a matching bus.
 
 ## TODO
 - ACE route selection is missing the SBS routes
-- Bus search by number
-- bus icons
-- simplify bus tooltip
 - ingest custom geojson
 - DOT open data ingest
 - map viewer enhancements

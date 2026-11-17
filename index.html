@@ -17,7 +17,17 @@
         <section class="intro"><p>Explore MTA bus routes, stops, and vehicles moving across the city.</p></section>
         <section class="control-section route-section">
           <label class="field-label" for="route-search">Find and select routes</label>
-          <div class="search-wrap"><span aria-hidden="true">⌕</span><input id="route-search" type="search" placeholder="Search route or destination" autocomplete="off"></div>
+          <div class="search-wrap">
+            <span aria-hidden="true">⌕</span>
+            <input id="route-search" type="search" placeholder="Search route or destination" autocomplete="off">
+          </div>
+        
+          <label class="field-label bus-search-label" for="bus-search">Find bus number</label>
+          <div class="search-wrap">
+            <span aria-hidden="true">⌕</span>
+            <input id="bus-search" type="search" placeholder="Search bus number" autocomplete="off">
+          </div>
+        
           <button id="select-all-routes" class="ace-button" type="button">Select all routes</button>
           <button id="select-no-routes" class="ace-button" type="button">Select no routes</button>
           <button id="select-ace" class="ace-button" type="button">Select all ACE routes</button>
@@ -31,6 +41,7 @@
           <form id="api-key-form"><label class="sr-only" for="api-key">MTA Bus Time API key</label><input id="api-key" type="password" placeholder="MTA Bus Time API key" autocomplete="off" required><button class="refresh-button" type="submit">Load live buses</button></form>
           <button id="clear-key" class="text-button" type="button" hidden>Clear key</button>
         </section>
+
         <section class="control-section layers-section">
           <h2 class="section-title">Map layers</h2>
           <label class="layer-row"><span class="layer-symbol route-symbol" aria-hidden="true"></span><span class="layer-copy"><strong>Routes</strong><small>Active route shapes</small></span><input id="toggle-routes" type="checkbox" checked><span class="switch" aria-hidden="true"></span></label>
