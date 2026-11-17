@@ -4,17 +4,154 @@ const ACE_URL = 'https://data.ny.gov/resource/ki2b-sg5y.json';
 const VEHICLE_ENDPOINT = 'https://bustime-classic.mta.info/api/siri/vehicle-monitoring.json';
 const VEHICLE_REFRESH_MS = 300_000;
 
-const els = {
-  search: document.querySelector('#route-search'), routeList: document.querySelector('#route-list'),
-  routeStyles: document.querySelector('#route-styles'), selectAce: document.querySelector('#select-ace'),
-  selectAllRoutes: document.querySelector('#select-all-routes'), selectNoRoutes: document.querySelector('#select-no-routes'),
-  routes: document.querySelector('#toggle-routes'), stops: document.querySelector('#toggle-stops'), vehicles: document.querySelector('#toggle-vehicles'),
-  routeCount: document.querySelector('#route-count'), stopCount: document.querySelector('#stop-count'), vehicleCount: document.querySelector('#vehicle-count'),
-  statusDot: document.querySelector('#status-indicator'), statusTitle: document.querySelector('#status-title'),
-  statusMessage: document.querySelector('#status-message'), lastUpdated: document.querySelector('#last-updated'),
-  mapHeading: document.querySelector('#map-heading'), refresh: document.querySelector('#refresh-button'),
-  apiKey: document.querySelector('#api-key'), keyForm: document.querySelector('#api-key-form'), clearKey: document.querySelector('#clear-key')
+onst els = {
+  search: document.querySelector('#route-search'),
+  busSearch: document.querySelector('#bus-search'),
+  routeList: document.querySelector('#route-list'),
+  routeStyles: document.querySelector('#route-styles'),
+  selectAce: document.querySelector('#select-ace'),
+  selectAllRoutes: document.querySelector('#select-all-routes'),
+  selectNoRoutes: document.querySelector('#select-no-routes'),
+  routes: document.querySelector('#toggle-routes'),
+  stops: document.querySelector('#toggle-stops'),
+  vehicles: document.querySelector('#toggle-vehicles'),
+  routeCount: document.querySelector('#route-count'),
+  stopCount: document.querySelector('#stop-count'),
+  vehicleCount: document.querySelector('#vehicle-count'),
+  statusDot: document.querySelector('#status-indicator'),
+  statusTitle: document.querySelector('#status-title'),
+  statusMessage: document.querySelector('#status-message'),
+  lastUpdated: document.querySelector('#last-updated'),
+  mapHeading: document.querySelector('#map-heading'),
+  refresh: document.querySelector('#refresh-button'),
+  apiKey: document.querySelector('#api-key'),
+  keyForm: document.querySelector('#api-key-form'),
+  clearKey: document.querySelector('#clear-key')
 };
+
+const VEHICLE_ROUTE_PREFIXES = {
+  M: '#2d8cff',
+  Q: '#ff8a3d',
+  Bx: '#7a5cff',
+  B: '#3ecf8e',
+  S: '#e86f6f',
+  QM: '#ffb703',
+  BxM: '#6c63ff',
+  X: '#f15bb5',
+  SIM: '#7dd3fc',
+  default: '#f7f7f7'
+};
+
+const AGENCY_COLORS = {
+  NYCT: '#3fa9f5',
+  MTABC: '#e76f51',
+  default: '#dfe6ee'
+};
+
+function normalizeVehicleName(raw) {
+  const value = String(raw ?? '').trim();
+  if (!value) return { number: '—', agency: 'Unknown', routePrefix: 'default' };
+  const normalized = value.replace(/^MTA\s+/i, '').trim();
+  const routePrefix = normalized.match(/^[A-Za-z]+/i)?.[0]?.toUpperCase() || '';
+  const numberMatch = normalized.match(/(?:^|[_\s-])(\d{3,5})(?:$|[_\s-])/);
+  const number = numberMatch ? numberMatch[1] : (normalized.match(/(\d{3,5})/) || [])[1] || '—';
+  const agency = normalized
+    .replace(new RegExp(`[_\\s-]*${number.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i'), '')
+    .replace(/^[A-Za-z]+\s+/i, '')
+    .replace(/_/g, ' ')
+    .trim();
+
+  const agencyClean = (agency || '').toUpperCase();
+  return {
+    number,
+    agency: agencyClean === 'NYCT' || agencyClean === 'MTABC' ? agencyClean : (routePrefix || 'Unknown'),
+    routePrefix: routePrefix || 'default'
+  };
+}
+
+function routePrefixForVehicle(routeValue) {
+  const raw = String(routeValue ?? '').trim();
+  const match = raw.match(/^[A-Za-z]+/i);
+  const prefix = match ? match[0].toUpperCase() : '';
+  if (prefix === 'M' || prefix === 'Q' || prefix === 'Bx' || prefix === 'B' || prefix === 'S' || prefix === 'QM' || prefix === 'BxM' || prefix === 'X' || prefix === 'SIM') {
+    return prefix;
+  }
+  const normalized = raw.replace(/^MTA\s+/i, '').replace(/_/g, ' ');
+  const alt = normalized.match(/([A-Za-z]+)\s*\d+/i)?.[1]?.toUpperCase() || '';
+  return alt || 'default';
+}
+
+function buildBusIcon(vehicle) {
+  const display = normalizeVehicleName(vehicle.vehicle || vehicle.route || 'Bus');
+  const routePrefix = routePrefixForVehicle(vehicle.route || vehicle.vehicle || '');
+  const fillColor = VEHICLE_ROUTE_PREFIXES[routePrefix] || VEHICLE_ROUTE_PREFIXES.default;
+  const borderColor = AGENCY_COLORS[display.agency] || AGENCY_COLORS.default;
+  const heading = Number(vehicle.heading ?? vehicle.bearing ?? 0);
+  const isHighlighted = String(vehicle.searchMatch || '').length > 0;
+
+  const iconHtml = `
+    <div
+      class="bus-marker ${isHighlighted ? 'highlighted' : ''}"
+      style="
+        --bus-fill:${fillColor};
+        --bus-border:${borderColor};
+        --bus-rotation:${heading}deg;
+      "
+    >
+      <span>${display.number}</span>
+    </div>
+  `;
+
+  return L.divIcon({
+    className: 'bus-marker-wrapper',
+    html: iconHtml,
+    iconSize: [30, 30],
+    iconAnchor: [15, 15],
+    popupAnchor: [0, -12]
+  });
+}
+
+
+function formatVehicleTooltip(vehicle) {
+  const cleanedVehicle = normalizeVehicleName(vehicle.vehicle || vehicle.route || 'Bus');
+  const routeName = vehicle.routeName || vehicle.route || 'Bus';
+  const agency = cleanedVehicle.agency || 'Unknown';
+  const destination = vehicle.destination || 'Destination unavailable';
+
+  return `
+    <div class="bus-tooltip">
+      <strong>${escapeHtml(cleanedVehicle.number)}${routeName ? ` (${escapeHtml(routeName)})` : ''}</strong>
+      <div>${escapeHtml(agency)}</div>
+      <div>${escapeHtml(destination)}</div>
+    </div>
+  `;
+}
+
+function buildVehiclePopup(vehicle) {
+  const cleanedVehicle = normalizeVehicleName(vehicle.vehicle || vehicle.route || 'Bus');
+  const agency = cleanedVehicle.agency || 'Unknown';
+  const destination = vehicle.destination || 'Destination unavailable';
+  const routeName = vehicle.routeName || vehicle.route || 'Bus';
+
+  return `
+    <strong>Bus ${escapeHtml(cleanedVehicle.number)}</strong><br>
+    ${escapeHtml(routeName)}<br>
+    ${escapeHtml(agency)}<br>
+    ${escapeHtml(destination)}
+  `;
+}
+
+function maybeHighlightBusSearch(term) {
+  const searchTerm = String(term || '').trim().toLowerCase();
+  for (const vehicle of state.vehicles) {
+    vehicle.searchMatch = false;
+    if (!searchTerm) continue;
+    const number = normalizeVehicleName(vehicle.vehicle || vehicle.route || '').number;
+    if (String(number).toLowerCase() === searchTerm) {
+      vehicle.searchMatch = true;
+    }
+  }
+}
 
 const map = L.map('map', { zoomControl: false, preferCanvas: true }).setView([40.7128, -73.95], 11);
 L.control.zoom({ position: 'bottomright' }).addTo(map);
@@ -196,17 +333,44 @@ function extractVehicles(payload) {
     };
   }).filter((vehicle) => Number.isFinite(vehicle.latitude) && Number.isFinite(vehicle.longitude));
 }
+
 function drawVehicles() {
-  vehicleLayer.clearLayers(); let count = 0;
+  vehicleLayer.clearLayers();
+  let count = 0;
+
   for (const vehicle of state.vehicles) {
-    const route = vehicle.route.replace(/^.*:/, '');
-    if (!state.allRoutesSelected && ![...state.selectedRoutes].some((name) => routeKey(name) === routeKey(route))) continue;
-    L.circleMarker([vehicle.latitude, vehicle.longitude], { radius: 7, color: '#ffffff', weight: 2, fillColor: '#e4443a', fillOpacity: 1 })
-      .bindPopup(`<strong>Bus ${escapeHtml(vehicle.vehicle || '—')}</strong><br>${escapeHtml(vehicle.destination || 'Destination unavailable')}<br>Route ${escapeHtml(route)}`).addTo(vehicleLayer);
+    const routeValue = String(vehicle.route || vehicle.vehicle || '').trim();
+    const display = normalizeVehicleName(routeValue);
+
+    if (!state.allRoutesSelected && ![...state.selectedRoutes].some((name) => routeKey(name) === routeKey(routeValue))) {
+      continue;
+    }
+
+    const marker = L.marker([vehicle.latitude, vehicle.longitude], {
+      icon: buildBusIcon(vehicle)
+    });
+
+    marker.bindPopup(buildVehiclePopup(vehicle));
+    marker.bindTooltip(formatVehicleTooltip(vehicle), {
+      direction: 'top',
+      offset: [0, -6],
+      opacity: 0.96
+    });
+
+    marker.addTo(vehicleLayer);
     count++;
   }
+
   els.vehicleCount.textContent = String(count);
 }
+
+els.busSearch.addEventListener('input', (event) => {
+  const term = event.target.value.trim();
+  maybeHighlightBusSearch(term);
+  drawVehicles();
+});
+
+els.search.addEventListener('input', renderRoutePicker);
 function syncLayers() {
   for (const [layer, checkbox] of [[routeLayer, els.routes], [stopLayer, els.stops], [vehicleLayer, els.vehicles]]) {
     if (checkbox.checked && !map.hasLayer(layer)) map.addLayer(layer);
@@ -237,7 +401,7 @@ async function loadNetworkData() {
   const routeFields = ['valid_from', 'valid_to', 'in_effect', 'route_id', 'route_short_name', 'route_long_name', 'route_description', 'trip_type', 'route_type', 'bundle', 'route_color', 'direction_id', 'geometry', 'vertices'];
   const stopFields = ['valid_from', 'valid_to', 'in_effect', 'route_id', 'route_short_name', 'route_long_name', 'route_description', 'route_color', 'stop_id', 'stop_name', 'direction_id', 'latitude', 'longitude', 'georeference'];
   const [routeResult, stopResult] = await Promise.allSettled([
-    fetchJson(requestUrl(ROUTES_URL, routeFields, 'caseless_one_of(`in_effect`, "true") AND `trip_type` IN ("1")')),
+    fetchJson(requestUrl(ROUTES_URL, routeFields, 'caseless_one_of(`in_effect`, "true") AND `trip_type` IN ("1","14")')),
     fetchJson(requestUrl(STOPS_URL, stopFields, 'caseless_one_of(`in_effect`, "true")'))
   ]);
   if (routeResult.status === 'fulfilled') state.routes = routeResult.value;
