@@ -23,7 +23,7 @@ export function createMapView(state, onRouteSelectionChange) {
     const value = String(raw ?? '').trim().replace(/^MTA\s+/i, '');
     if (!value) return { number: '—', agency: 'Unknown' };
     const number = value.match(/\d{3,5}/)?.[0] || '—';
-    const agencyMatch = value.match(/\b(NYCT|MTABC)\b/i)?.[1]?.toUpperCase();
+    const agencyMatch = value.match(/(?:^|[\s_-])(?:MTA\s+)?(NYCT|MTABC)(?=[\s_-]|$)/i)?.[1]?.toUpperCase();
     const routePrefix = value.match(ROUTE_PREFIX_PATTERN)?.[1]?.toUpperCase();
     return { number, agency: agencyMatch || routePrefix || 'Unknown' };
   }
@@ -229,14 +229,21 @@ export function createMapView(state, onRouteSelectionChange) {
   }
 
   function buildBusIcon(vehicle) {
+    const routeValue = vehicle.route || vehicle.vehicle || 'Bus';
     const display = normalizeVehicleName(vehicle.vehicle || vehicle.route || 'Bus');
-    const prefix = vehicleRouteName(vehicle.route || vehicle.vehicle || '').match(ROUTE_PREFIX_PATTERN)?.[1]?.toUpperCase();
-    const fillColor = VEHICLE_ROUTE_COLORS[prefix] || VEHICLE_ROUTE_COLORS.DEFAULT;
-    const borderColor = AGENCY_COLORS[display.agency] || AGENCY_COLORS.DEFAULT;
-    const heading = Number(vehicle.heading ?? vehicle.bearing ?? 0);
+    const normalizedRoute = String(routeValue ?? '').replace(/^(?:MTA\s+)?(?:NYCT|MTABC)[\s_-]*/i, '').trim();
+    const prefix = normalizedRoute.match(ROUTE_PREFIX_PATTERN)?.[1]?.toUpperCase() ||
+      vehicleRouteName(routeValue).match(ROUTE_PREFIX_PATTERN)?.[1]?.toUpperCase();
+    const routeRecord = state.routes.find((record) => routeKey(routeName(record)) === routeKey(prefix || ''));
+    const requestedColor = routeRecord?.route_color || VEHICLE_ROUTE_COLORS[prefix] || VEHICLE_ROUTE_COLORS.DEFAULT;
+    const fillColor = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(String(requestedColor))
+      ? String(requestedColor)
+      : (VEHICLE_ROUTE_COLORS[prefix] || VEHICLE_ROUTE_COLORS.DEFAULT);
+    const borderColor = display.agency === 'MTABC' ? AGENCY_COLORS.MTABC :
+      display.agency === 'NYCT' ? AGENCY_COLORS.NYCT : AGENCY_COLORS.DEFAULT;
     const highlighted = Boolean(vehicle.searchMatch);
-    const html = `<div class="bus-marker ${highlighted ? 'highlighted' : ''}" style="--bus-fill:${fillColor};--bus-border:${borderColor};--bus-rotation:${heading}deg"><span>${escapeHtml(display.number)}</span></div>`;
-    return L.divIcon({ className: 'bus-marker-wrapper', html, iconSize: [30, 30], iconAnchor: [15, 15], popupAnchor: [0, -12] });
+    const html = `<div class="bus-marker ${highlighted ? 'highlighted' : ''}" style="--bus-fill:${fillColor};--bus-border:${borderColor}"></div>`;
+    return L.divIcon({ className: 'bus-marker-wrapper', html, iconSize: [20, 20], iconAnchor: [10, 10], popupAnchor: [0, -10] });
   }
 
   function formatVehicleTooltip(vehicle) {
@@ -251,9 +258,7 @@ export function createMapView(state, onRouteSelectionChange) {
   }
 
   function vehicleMatchesSelectedRoutes(vehicle) {
-    if (state.allRoutesSelected) return true;
-    const normalizedRoute = routeKey(vehicleRouteName(vehicle.route || vehicle.vehicle || ''));
-    return [...state.selectedRoutes].some((name) => routeKey(name) === normalizedRoute);
+    return true;
   }
 
   function drawVehicles() {
