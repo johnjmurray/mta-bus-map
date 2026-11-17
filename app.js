@@ -61,20 +61,12 @@ async function loadVehicles() {
     setStatus('API key needed', 'Enter your MTA Bus Time key to load live bus positions.', 'loading');
     return;
   }
-  if (!state.allRoutesSelected && !state.selectedRoutes.size) {
-    state.vehicles = [];
-    view.drawVehicles();
-    return;
-  }
 
   const controller = new AbortController();
   state.vehicleRequest = controller;
-  const selectedRoute = !state.allRoutesSelected && state.selectedRoutes.size === 1
-    ? [...state.selectedRoutes][0]
-    : undefined;
 
   try {
-    const vehicles = await data.loadVehicles({ apiKey: state.apiKey, selectedRoute, signal: controller.signal });
+    const vehicles = await data.loadVehicles({ apiKey: state.apiKey, signal: controller.signal });
     if (requestId !== state.vehicleRequestId) return;
     state.vehicles = vehicles;
     view.updateBusHighlights();
