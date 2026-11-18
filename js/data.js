@@ -72,7 +72,50 @@ export function extractVehicles(payload) {
     vehicle.latitude >= -90 && vehicle.latitude <= 90 && vehicle.longitude >= -180 && vehicle.longitude <= 180);
 }
 
+function ensureHistoricalSignControls() {
+  const control = document.querySelector('.sign-control');
+  if (!control || document.querySelector('#include-historical-signs')) return;
+
+  const options = document.createElement('div');
+  options.className = 'historical-sign-options';
+  options.style.cssText = 'display:grid;gap:8px;margin:0 0 10px;color:#d7dce2;font-size:10px;';
+
+  const label = document.createElement('label');
+  label.style.cssText = 'display:flex;align-items:center;gap:7px;cursor:pointer;';
+  const checkbox = document.createElement('input');
+  checkbox.id = 'include-historical-signs';
+  checkbox.type = 'checkbox';
+  checkbox.setAttribute('aria-controls', 'historical-sign-date');
+  const labelText = document.createElement('span');
+  labelText.textContent = 'Include HISTORICAL signs';
+  label.append(checkbox, labelText);
+
+  const dateLabel = document.createElement('label');
+  dateLabel.htmlFor = 'historical-sign-date';
+  dateLabel.textContent = 'Completed on or after';
+  dateLabel.style.cssText = 'display:grid;gap:4px;color:#929ba6;';
+  const date = document.createElement('input');
+  date.id = 'historical-sign-date';
+  date.type = 'date';
+  const defaultDate = new Date();
+  defaultDate.setFullYear(defaultDate.getFullYear() - 1);
+  date.value = defaultDate.toISOString().slice(0, 10);
+  date.disabled = true;
+  date.style.cssText = 'width:100%;height:32px;padding:0 8px;border:1px solid #363e48;color:#e6e9ed;background:#0e1217;';
+  dateLabel.append(date);
+  checkbox.addEventListener('change', () => { date.disabled = !checkbox.checked; });
+
+  options.append(label, dateLabel);
+  const button = control.querySelector('#fetch-signs');
+  if (button) control.insertBefore(options, button);
+  else control.prepend(options);
+}
+
 export function createDataService() {
+  // The maximum viewport width is shared with the fetch button's map-view validation.
+  CONFIG.streetSignsMaxWidthFeet = 1500;
+  ensureHistoricalSignControls();
+
   async function loadNetwork() {
     const routeFields = [
       'valid_from', 'valid_to', 'in_effect', 'route_id', 'route_short_name', 'route_long_name',
@@ -103,7 +146,7 @@ export function createDataService() {
     return extractVehicles(await fetchJson(url, { signal }));
   }
 
-  async function loadStreetSigns(bounds, { signal } = {}) {
+  async function loadStreetSigns(bounds, { signal, includeHistorical, historicalSince } = {}) {
     const corners = [
       bounds.getNorthWest(), bounds.getNorthEast(), bounds.getSouthWest(), bounds.getSouthEast()
     ].map(({ lat, lng }) => projectLngLatToStatePlane(lng, lat));
@@ -119,9 +162,23 @@ export function createDataService() {
       'sign_location', 'distance_from_intersection', 'arrow_direction', 'sheeting_type', 'support',
       'sign_x_coord', 'sign_y_coord'
     ];
+
+    const checkbox = document.querySelector('#include-historical-signs');
+    const dateInput = document.querySelector('#historical-sign-date');
+    const wantHistorical = includeHistorical ?? Boolean(checkbox?.checked);
+    const since = historicalSince ?? dateInput?.value;
+    let recordFilter = '`record_type` = "CURRENT"';
+    if (wantHistorical) {
+      if (!since || !/^\d{4}-\d{2}-\d{2}$/.test(since) || Number.isNaN(Date.parse(`${since}T00:00:00`))) {
+        throw new Error('Choose a valid date for historical signs.');
+      }
+      recordFilter = `(${recordFilter} OR (\`record_type\` = "HISTORICAL" AND \`order_completed_on_date\` >= "${since}T00:00:00"))`;
+    }
+
     const query = `SELECT ${fields.map((field) => `\`${field}\``).join(', ')} ` +
-    `WHERE \`sign_x_coord\`::number BETWEEN ${minX} AND ${maxX} ` +
-    `AND \`sign_y_coord\`::number BETWEEN ${minY} AND ${maxY} LIMIT ${CONFIG.streetSignsLimit}`;
+      `WHERE ${recordFilter} ` +
+      `AND \`sign_x_coord\`::number BETWEEN ${minX} AND ${maxX} ` +
+      `AND \`sign_y_coord\`::number BETWEEN ${minY} AND ${maxY} LIMIT ${CONFIG.streetSignsLimit}`;
     const url = new URL(CONFIG.streetSignsUrl);
     url.searchParams.set('$query', query);
     const rows = await fetchJson(url, { signal });
