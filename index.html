@@ -10,15 +10,6 @@
     <link rel="preconnect" href="https://data.cityofnewyork.us">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
     <link rel="stylesheet" href="styles.css">
-    <style>
-      .sign-control { padding-top: 12px; }
-      .sign-control button { width: 100%; min-height: 34px; border: 1px solid #80622d; color: #fff0cf; background: #3b3020; cursor: pointer; font-size: 10px; font-weight: 700; }
-      .sign-control button:hover:not(:disabled) { background: #514027; }
-      .sign-control button:disabled { opacity: .58; cursor: not-allowed; }
-      .sign-control p { min-height: 28px; margin: 6px 0 0; color: #aeb5be; font-size: 9px; line-height: 1.45; }
-      .sign-symbol { background: #3b3020; }
-      .sign-symbol::before { width: 8px; height: 8px; border: 2px solid #fff2c6; border-radius: 50%; background: #f0a52b; content: ''; }
-    </style>
   </head>
   <body>
     <main class="app-shell">
@@ -59,6 +50,11 @@
       <section class="map-panel" aria-label="Map of MTA buses and street signs">
         <div class="map-topbar"><div><span class="map-kicker">MTA BUS NETWORK</span><strong id="map-heading">New York City</strong></div><div class="updated-label"><span class="live-pulse"></span><span id="last-updated">Waiting for data</span></div></div>
         <div id="map" role="application" aria-label="Interactive map showing MTA bus routes, stops, buses, and requested street signs"></div>
+        <aside id="sign-sidebar" class="sign-sidebar" aria-label="Returned street signs" hidden>
+          <header><div><span class="sign-sidebar-kicker">NYC DOT</span><h2>Street signs</h2></div><button id="close-sign-sidebar" type="button" aria-label="Close sign results">×</button></header>
+          <div id="sign-sidebar-summary" class="sign-sidebar-summary"></div>
+          <div id="sign-sidebar-list" class="sign-sidebar-list"></div>
+        </aside>
         <div class="map-attribution-note">Map data © OpenStreetMap contributors</div>
       </section>
     </main>
