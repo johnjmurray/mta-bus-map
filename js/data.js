@@ -157,7 +157,7 @@ export function createDataService() {
     const minY = Math.floor(Math.min(...ys));
     const maxY = Math.ceil(Math.max(...ys));
     const fields = [
-      'order_number', 'record_type', 'order_type', 'borough', 'on_street', 'from_street',
+      'order_number', 'record_type', 'order_type', 'borough', 'on_street', 'from_street','to_street',
       'side_of_street', 'order_completed_on_date', 'sign_code', 'sign_description', 'sign_size',
       'sign_location', 'distance_from_intersection', 'arrow_direction', 'sheeting_type', 'support',
       'sign_x_coord', 'sign_y_coord'
