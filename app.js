@@ -6,13 +6,15 @@ const state = {
   routes: [],
   stops: [],
   vehicles: [],
+  signs: [],
   selectedRoutes: new Set(),
   allRoutesSelected: true,
   routeLines: [],
   routeStyles: new Map(),
   apiKey: '',
   vehicleRequest: null,
-  vehicleRequestId: 0
+  vehicleRequestId: 0,
+  signRequest: null
 };
 
 const data = createDataService();
@@ -94,6 +96,57 @@ async function handleRouteSelection() {
 
 view = createMapView(state, handleRouteSelection);
 
+function updateStreetSignControl() {
+  const width = view.viewportWidthFeet();
+  const tooWide = width > CONFIG.streetSignsMaxWidthFeet;
+  els.fetchSigns.disabled = Boolean(state.signRequest) || tooWide;
+  if (state.signRequest) {
+    els.signsStatus.textContent = 'Fetching signs for the current map view…';
+  } else if (tooWide) {
+    els.signsStatus.textContent = `Zoom in until the map is no more than ${CONFIG.streetSignsMaxWidthFeet} ft wide (currently about ${Math.round(width).toLocaleString()} ft).`;
+  } else {
+    els.signsStatus.textContent = `Current map width: about ${Math.round(width).toLocaleString()} ft. Fetch signs for this view.`;
+  }
+}
+
+async function fetchStreetSigns() {
+  const width = view.viewportWidthFeet();
+  if (width > CONFIG.streetSignsMaxWidthFeet || state.signRequest) {
+    updateStreetSignControl();
+    return;
+  }
+
+  const controller = new AbortController();
+  state.signRequest = controller;
+  updateStreetSignControl();
+  try {
+    const signs = await data.loadStreetSigns(viewportBounds(), { signal: controller.signal });
+    if (state.signRequest !== controller) return;
+    state.signs = signs;
+    els.signs.checked = true;
+    view.drawSigns();
+    view.syncLayers();
+    els.signsStatus.textContent = signs.length >= CONFIG.streetSignsLimit
+      ? `Showing ${signs.length.toLocaleString()} signs (the API result limit was reached; zoom in for a smaller view).`
+      : `${signs.length.toLocaleString()} signs loaded for this view.`;
+    els.lastUpdated.textContent = timestampLabel('Street signs loaded');
+  } catch (error) {
+    if (error.name !== 'AbortError') {
+      els.signsStatus.textContent = `Could not load street signs: ${error.message}`;
+    }
+  } finally {
+    if (state.signRequest === controller) state.signRequest = null;
+    updateStreetSignControl();
+    if (state.signs.length) {
+      els.signsStatus.textContent = `${state.signs.length.toLocaleString()} signs loaded. Fetch again to update for the current view.`;
+    }
+  }
+}
+
+function viewportBounds() {
+  return map.getBounds();
+}
+
 async function selectAceRoutes() {
   els.selectAce.disabled = true;
   try {
@@ -146,7 +199,11 @@ els.busSearch.addEventListener('input', () => {
 els.selectAce.addEventListener('click', selectAceRoutes);
 els.selectAllRoutes.addEventListener('click', selectAllRoutes);
 els.selectNoRoutes.addEventListener('click', selectNoRoutes);
+els.fetchSigns.addEventListener('click', fetchStreetSigns);
+els.signs.addEventListener('change', view.syncLayers);
 [els.routes, els.stops, els.vehicles].forEach((checkbox) => checkbox.addEventListener('change', view.syncLayers));
+map.on('moveend zoomend resize', updateStreetSignControl);
+updateStreetSignControl();
 
 els.keyForm.addEventListener('submit', async (event) => {
   event.preventDefault();

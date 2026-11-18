@@ -1,6 +1,7 @@
 import {
   AGENCY_COLORS, els, escapeHtml, layers, map, ROUTE_PREFIX_PATTERN, VEHICLE_ROUTE_COLORS
 } from './config.js';
+import { projectLngLatToStatePlane } from './data.js';
 
 export function createMapView(state, onRouteSelectionChange) {
   function routeName(record) {
@@ -228,6 +229,31 @@ export function createMapView(state, onRouteSelectionChange) {
     }
   }
 
+  function drawSigns() {
+    layers.signs.clearLayers();
+    for (const sign of state.signs) {
+      const details = [
+        `<strong>${escapeHtml(sign.sign_description || sign.sign_code || 'Street sign')}</strong>`,
+        `Code: ${escapeHtml(sign.sign_code || '—')}`,
+        `Order: ${escapeHtml(sign.order_number || '—')}`,
+        `Street: ${escapeHtml(sign.on_street || '—')}`,
+        `Borough: ${escapeHtml(sign.borough || '—')}`,
+        `Direction: ${escapeHtml(sign.arrow_direction || '—')}`
+      ].join('<br>');
+      L.circleMarker([sign.latitude, sign.longitude], {
+        radius: 4, color: '#fff2c6', weight: 1, fillColor: '#f0a52b', fillOpacity: 0.95
+      }).bindPopup(details).addTo(layers.signs);
+    }
+  }
+
+  function viewportWidthFeet() {
+    const bounds = map.getBounds();
+    const corners = [bounds.getNorthWest(), bounds.getNorthEast(), bounds.getSouthWest(), bounds.getSouthEast()]
+      .map(({ lat, lng }) => projectLngLatToStatePlane(lng, lat));
+    const xs = corners.map(([x]) => x);
+    return Math.max(...xs) - Math.min(...xs);
+  }
+
   function buildBusIcon(vehicle) {
     const routeValue = vehicle.route || vehicle.vehicle || 'Bus';
     const display = normalizeVehicleName(vehicle.vehicle || vehicle.route || 'Bus');
@@ -277,7 +303,7 @@ export function createMapView(state, onRouteSelectionChange) {
 
   function syncLayers() {
     for (const [layer, checkbox] of [
-      [layers.routes, els.routes], [layers.stops, els.stops], [layers.vehicles, els.vehicles]
+      [layers.routes, els.routes], [layers.stops, els.stops], [layers.vehicles, els.vehicles], [layers.signs, els.signs]
     ]) {
       if (checkbox.checked && !map.hasLayer(layer)) map.addLayer(layer);
       else if (!checkbox.checked && map.hasLayer(layer)) map.removeLayer(layer);
@@ -288,6 +314,7 @@ export function createMapView(state, onRouteSelectionChange) {
     drawRoutes();
     drawStops();
     drawVehicles();
+    drawSigns();
     syncLayers();
     if (state.allRoutesSelected) {
       els.mapHeading.textContent = 'New York City';
@@ -313,5 +340,8 @@ export function createMapView(state, onRouteSelectionChange) {
     }
   }
 
-  return { applyFilters, drawVehicles, renderRoutePicker, sortedRouteNames, stopsWithRoutes, syncLayers, updateBusHighlights };
+  return {
+    applyFilters, drawVehicles, drawSigns, renderRoutePicker, sortedRouteNames, stopsWithRoutes,
+    syncLayers, updateBusHighlights, viewportWidthFeet
+  };
 }

@@ -1,5 +1,23 @@
 import { CONFIG } from './config.js';
 
+const STATE_PLANE_CRS = 'EPSG:2263';
+const STATE_PLANE_DEFINITION = '+proj=lcc +lat_1=40.66666666666666 +lat_2=41.03333333333333 +lat_0=40.16666666666666 +lon_0=-74 +x_0=300000.0000000001 +y_0=0 +datum=NAD83 +units=us-ft +no_defs';
+
+function projectCoordinates(from, to, coordinates) {
+  const proj4 = window.proj4;
+  if (!proj4) throw new Error('The coordinate conversion library could not be loaded.');
+  if (!proj4.defs(STATE_PLANE_CRS)) proj4.defs(STATE_PLANE_CRS, STATE_PLANE_DEFINITION);
+  return proj4(from, to, coordinates);
+}
+
+export function projectLngLatToStatePlane(longitude, latitude) {
+  return projectCoordinates('EPSG:4326', STATE_PLANE_CRS, [longitude, latitude]);
+}
+
+function projectStatePlaneToLngLat(x, y) {
+  return projectCoordinates(STATE_PLANE_CRS, 'EPSG:4326', [x, y]);
+}
+
 export function requestUrl(base, fields, where) {
   const query = `SELECT ${fields.map((field) => `\`${field}\``).join(', ')} WHERE ${where} LIMIT 50000`;
   const url = new URL(base);
@@ -85,5 +103,39 @@ export function createDataService() {
     return extractVehicles(await fetchJson(url, { signal }));
   }
 
-  return { loadNetwork, loadAceRoutes, loadVehicles };
+  async function loadStreetSigns(bounds, { signal } = {}) {
+    const corners = [
+      bounds.getNorthWest(), bounds.getNorthEast(), bounds.getSouthWest(), bounds.getSouthEast()
+    ].map(({ lat, lng }) => projectLngLatToStatePlane(lng, lat));
+    const xs = corners.map(([x]) => x);
+    const ys = corners.map(([, y]) => y);
+    const minX = Math.floor(Math.min(...xs));
+    const maxX = Math.ceil(Math.max(...xs));
+    const minY = Math.floor(Math.min(...ys));
+    const maxY = Math.ceil(Math.max(...ys));
+    const fields = [
+      'order_number', 'record_type', 'order_type', 'borough', 'on_street', 'from_street',
+      'side_of_street', 'order_completed_on_date', 'sign_code', 'sign_description', 'sign_size',
+      'sign_location', 'distance_from_intersection', 'arrow_direction', 'sheeting_type', 'support',
+      'sign_x_coord', 'sign_y_coord'
+    ];
+    const query = `SELECT ${fields.map((field) => `\`${field}\``).join(', ')} ` +
+      `WHERE CAST(\`sign_x_coord\` AS number) BETWEEN ${minX} AND ${maxX} ` +
+      `AND CAST(\`sign_y_coord\` AS number) BETWEEN ${minY} AND ${maxY} LIMIT ${CONFIG.streetSignsLimit}`;
+    const url = new URL(CONFIG.streetSignsUrl);
+    url.searchParams.set('$query', query);
+    const rows = await fetchJson(url, { signal });
+
+    return rows.map((row) => {
+      const x = Number(row.sign_x_coord);
+      const y = Number(row.sign_y_coord);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+      const [longitude, latitude] = projectStatePlaneToLngLat(x, y);
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude) ||
+        latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) return null;
+      return { ...row, latitude, longitude };
+    }).filter(Boolean);
+  }
+
+  return { loadNetwork, loadAceRoutes, loadVehicles, loadStreetSigns };
 }
