@@ -120,8 +120,8 @@ export function createDataService() {
       'sign_x_coord', 'sign_y_coord'
     ];
     const query = `SELECT ${fields.map((field) => `\`${field}\``).join(', ')} ` +
-      `WHERE CAST(\`sign_x_coord\` AS number) BETWEEN ${minX} AND ${maxX} ` +
-      `AND CAST(\`sign_y_coord\` AS number) BETWEEN ${minY} AND ${maxY} LIMIT ${CONFIG.streetSignsLimit}`;
+    `WHERE \`sign_x_coord\`::number BETWEEN ${minX} AND ${maxX} ` +
+    `AND \`sign_y_coord\`::number BETWEEN ${minY} AND ${maxY} LIMIT ${CONFIG.streetSignsLimit}`;
     const url = new URL(CONFIG.streetSignsUrl);
     url.searchParams.set('$query', query);
     const rows = await fetchJson(url, { signal });
