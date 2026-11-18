@@ -2,6 +2,9 @@ export const CONFIG = {
   routesUrl: 'https://data.ny.gov/resource/bzwk-3hb4.json',
   stopsUrl: 'https://data.ny.gov/resource/2ucp-7wg5.json',
   aceUrl: 'https://data.ny.gov/resource/ki2b-sg5y.json',
+  streetSignsUrl: 'https://data.cityofnewyork.us/resource/qt6m-xctn.json',
+  streetSignsLimit: 5000,
+  streetSignsMaxWidthFeet: 1000,
   vehicleUrl: 'https://bustime-classic.mta.info/api/siri/vehicle-monitoring.json',
   vehicleRefreshMs: 300_000,
   requestTimeoutMs: 20_000,
@@ -27,6 +30,9 @@ export const els = {
   routes: document.querySelector('#toggle-routes'),
   stops: document.querySelector('#toggle-stops'),
   vehicles: document.querySelector('#toggle-vehicles'),
+  signs: document.querySelector('#toggle-signs'),
+  fetchSigns: document.querySelector('#fetch-signs'),
+  signsStatus: document.querySelector('#signs-status'),
   routeCount: document.querySelector('#route-count'),
   stopCount: document.querySelector('#stop-count'),
   vehicleCount: document.querySelector('#vehicle-count'),
@@ -52,7 +58,8 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 export const layers = {
   routes: L.featureGroup().addTo(map),
   stops: L.layerGroup().addTo(map),
-  vehicles: L.layerGroup().addTo(map)
+  vehicles: L.layerGroup().addTo(map),
+  signs: L.layerGroup()
 };
 
 export function setStatus(title, message, kind = 'loading') {
