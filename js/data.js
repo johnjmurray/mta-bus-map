@@ -167,12 +167,12 @@ export function createDataService() {
     const dateInput = document.querySelector('#historical-sign-date');
     const wantHistorical = includeHistorical ?? Boolean(checkbox?.checked);
     const since = historicalSince ?? dateInput?.value;
-    let recordFilter = '`record_type` = "CURRENT"';
+    let recordFilter = '`record_type` = "Current"';
     if (wantHistorical) {
       if (!since || !/^\d{4}-\d{2}-\d{2}$/.test(since) || Number.isNaN(Date.parse(`${since}T00:00:00`))) {
         throw new Error('Choose a valid date for historical signs.');
       }
-      recordFilter = `(${recordFilter} OR (\`record_type\` = "HISTORICAL" AND \`order_completed_on_date\` >= "${since}T00:00:00"))`;
+      recordFilter = `(${recordFilter} OR (\`record_type\` = "Historical" AND \`order_completed_on_date\` >= "${since}T00:00:00"))`;
     }
 
     const query = `SELECT ${fields.map((field) => `\`${field}\``).join(', ')} ` +
