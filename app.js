@@ -1,6 +1,7 @@
 import { CONFIG, els, setStatus, timestampLabel } from './js/config.js';
 import { createDataService } from './js/data.js';
 import { createMapView } from './js/map-view.js';
+import { CONFIG, els, map, setStatus, timestampLabel } from './js/config.js';
 
 const state = {
   routes: [],
