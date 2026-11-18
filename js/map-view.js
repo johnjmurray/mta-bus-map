@@ -1,6 +1,11 @@
+import {
+  AGENCY_COLORS, els, escapeHtml, layers, map, ROUTE_PREFIX_PATTERN, VEHICLE_ROUTE_COLORS
+} from './config.js';
+
 export {
   AGENCY_COLORS, els, escapeHtml, layers, map, ROUTE_PREFIX_PATTERN, VEHICLE_ROUTE_COLORS
 } from './config.js';
+
 import { projectLngLatToStatePlane } from './data.js';
 
 export function createMapView(state, onRouteSelectionChange) {
