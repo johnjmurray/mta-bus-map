@@ -179,8 +179,8 @@ export function createMapView(state, onRouteSelectionChange) {
   function signTooltip(sign) {
     return [
       `<strong>${escapeHtml(signText(sign.sign_description))}</strong><br>${escapeHtml(signText(sign.sign_notes))} | ${escapeHtml(signText(sign.sign_code))}`,
-      `${escapeHtml(signText(sign.side_of_street))} side of ${escapeHtml(signText(sign.on_street))} (${escapeHtml(signText(sign.from_street))} -> ${escapeHtml(signText(sign.to_street))})`,
-      `${escapeHtml(signText(sign.distance_from_intersection))} ft from ${escapeHtml(signText(sign.from_street))}`,
+      `${escapeHtml(signText(sign.side_of_street))} side of ${escapeHtml(signText(sign.on_street))}`, 
+      `${escapeHtml(signText(sign.distance_from_intersection))} ft from ${escapeHtml(signText(sign.from_street))} -> ${escapeHtml(signText(sign.to_street))})`,
       `${escapeHtml(signText(sign.order_completed_on_date))} | ${escapeHtml(signText(sign.record_type))} | ${escapeHtml(signText(sign.order_number))}`
     ].join('<br>');
   }
