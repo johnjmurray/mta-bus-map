@@ -182,11 +182,12 @@ export function createMapView(state, onRouteSelectionChange) {
 
   function signText(value) { return String(value ?? '').trim() || '—'; }
   function signTooltip(sign) {
+    const completedOn = signText(sign.order_completed_on_date).match(/^\d{4}-\d{2}-\d{2}/)?.[0] || signText(sign.order_completed_on_date);
     return [
       `<strong>${escapeHtml(signText(sign.sign_description))}</strong><br>${escapeHtml(signText(sign.sign_notes))} | ${escapeHtml(signText(sign.sign_code))}`,
       `${escapeHtml(signText(sign.side_of_street))} side of ${escapeHtml(signText(sign.on_street))}`,
       `${escapeHtml(signText(sign.distance_from_intersection))} ft from ${escapeHtml(signText(sign.from_street))} -> ${escapeHtml(signText(sign.to_street))})`,
-      `${escapeHtml(signText(sign.order_completed_on_date))} | ${escapeHtml(signText(sign.record_type))} | ${escapeHtml(signText(sign.order_number))}`
+      `${escapeHtml(completedOn)} | ${escapeHtml(signText(sign.record_type))} | ${escapeHtml(signText(sign.order_number))}`
     ].join('<br>');
   }
 
@@ -324,7 +325,7 @@ export function createMapView(state, onRouteSelectionChange) {
 
   function updateBusHighlights() {
     const term = els.busSearch.value.trim().toLowerCase();
-    for (const vehicle of state.vehicles) { const number = normalizeVehicleName(vehicle.vehicle || vehicle.route || '').number; vehicle.searchMatch = Boolean(term) && number.toLowerCase() === term.toLowerCase(); }
+    for (const vehicle of state.vehicles) { const number = normalizeVehicleName(vehicle.vehicle || vehicle.route || '').number; vehicle.searchMatch = Boolean(term) && number.toLowerCase() === term; }
   }
 
   return { applyFilters, drawVehicles, drawSigns, renderRoutePicker, sortedRouteNames, stopsWithRoutes, syncLayers, updateBusHighlights, viewportWidthFeet };
