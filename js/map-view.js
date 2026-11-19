@@ -76,7 +76,7 @@ export function createMapView(state, onRouteSelectionChange) {
   function normalizeLines(coordinates) {
     if (!Array.isArray(coordinates) || !coordinates.length) return [];
     const isPosition = (value) => Array.isArray(value) && value.length >= 2 &&
-      Number.isFinite(Number(value[0])) && Number.isFinite(Number(value[1])));
+      Number.isFinite(Number(value[0])) && Number.isFinite(Number(value[1]));
     let lines;
     if (isPosition(coordinates[0])) lines = [coordinates];
     else if (Array.isArray(coordinates[0]) && isPosition(coordinates[0][0])) lines = coordinates;
