@@ -104,7 +104,6 @@ export function createMapView(state, onRouteSelectionChange) {
       const colorInput = document.createElement('input'); colorInput.type = 'color'; colorInput.value = style.color;
       colorInput.setAttribute('aria-label', `${route} line color`);
       colorInput.addEventListener('input', () => { style.color = colorInput.value; drawRoutes(); });
-      colorLabel.append(colorInput);
       const opacityLabel = document.createElement('label'); opacityLabel.className = 'opacity-control';
       const opacityText = document.createElement('span'); opacityText.textContent = `Opacity ${Math.round(style.opacity * 100)}%`;
       const opacityInput = document.createElement('input'); opacityInput.type = 'range'; opacityInput.min = '10'; opacityInput.max = '100'; opacityInput.value = String(Math.round(style.opacity * 100));
@@ -174,7 +173,7 @@ export function createMapView(state, onRouteSelectionChange) {
       L.rectangle([
         [stop.latlng[0] - 0.000025, stop.latlng[1] - 0.000050],
         [stop.latlng[0] + 0.000025, stop.latlng[1] + 0.000050]
-      ], { color: '#25364a', weight: 1.5, fill: false, opacity: 0.95 })
+      ], { color: '#25364a', weight: 1.5, fillColor: '#add8e6', fill: true, fillOpacity: 0.5, opacity: 0.95 })
         .bindTooltip(details, { direction: 'top', opacity: 0.96 })
         .bindPopup(details)
         .addTo(layers.stops);
@@ -236,10 +235,10 @@ export function createMapView(state, onRouteSelectionChange) {
 
   function signMarkerStyle(sign) {
     const code = signCode(sign);
-    if (code.startsWith('SI')) return { radius: 6, fillColor: '#add8e6', color: '#ffffff', fillOpacity: 0.8, opacity: 0.8, weight: 2 };
-    if (code.startsWith('SP')) return { radius: 6, fillColor: '#1f3a5f', color: '#ff0000', fillOpacity: 0.8, opacity: 0.8, weight: 2 };
-    if (code.startsWith('PS')) return { radius: 6, fillColor: '#8b0000', color: '#ffffff', fillOpacity: 0.8, opacity: 0.8, weight: 2 };
-    return { radius: 6, fillColor: '#697586', color: '#ffffff', fillOpacity: 0.8, opacity: 0.8, weight: 2 };
+    if (code.startsWith('SI')) return { fillColor: '#add8e6', color: '#000000', fillOpacity: 0.8, opacity: 0.8, weight: 2 };
+    if (code.startsWith('SP')) return { fillColor: '#0000ff', color: '#ff0000', fillOpacity: 0.8, opacity: 0.8, weight: 2 };
+    if (code.startsWith('PS')) return { fillColor: '#ffffff', color: '#ff0000', fillOpacity: 0.8, opacity: 0.8, weight: 2 };
+    return { fillColor: '#697586', color: '#ffffff', fillOpacity: 0.8, opacity: 0.8, weight: 2 };
   }
 
   function drawSigns() {
@@ -247,7 +246,12 @@ export function createMapView(state, onRouteSelectionChange) {
     state.signMarkers = new Map();
     for (const sign of state.signs) {
       const details = signTooltip(sign);
-      const marker = L.circleMarker([sign.latitude, sign.longitude], signMarkerStyle(sign))
+      const stopSize = 0.000100;
+      const signSize = stopSize / 4;
+      const marker = L.rectangle([
+        [sign.latitude - signSize / 2, sign.longitude - signSize],
+        [sign.latitude + signSize / 2, sign.longitude + signSize]
+      ], signMarkerStyle(sign))
         .bindTooltip(details, { direction: 'top', sticky: true, opacity: 0.96 })
         .bindPopup(details)
         .addTo(layers.signs);
@@ -294,7 +298,8 @@ export function createMapView(state, onRouteSelectionChange) {
     layers.vehicles.clearLayers(); let count = 0;
     for (const vehicle of state.vehicles) {
       if (!vehicleMatchesSelectedRoutes(vehicle)) continue;
-      L.marker([vehicle.latitude, vehicle.longitude], { icon: buildBusIcon(vehicle) }).bindPopup(buildVehiclePopup(vehicle)).bindTooltip(formatVehicleTooltip(vehicle), { direction: 'top', offset: [0, -6], opacity: 0.96 }).addTo(layers.vehicles); count++;
+      L.marker([vehicle.latitude, vehicle.longitude], { icon: buildBusIcon(vehicle) }).bindPopup(buildVehiclePopup(vehicle)).bindTooltip(formatVehicleTooltip(vehicle), { direction: 'top', offset: [0, -12] }).addTo(layers.vehicles);
+      count += 1;
     }
     els.vehicleCount.textContent = String(count);
   }
@@ -311,7 +316,7 @@ export function createMapView(state, onRouteSelectionChange) {
     if (state.allRoutesSelected) els.mapHeading.textContent = 'New York City';
     else if (state.selectedRoutes.size) {
       const selectedNames = [...state.selectedRoutes];
-      if (fitMap && state.routeLines.length) { const lines = state.routeLines.flatMap((group) => group.getLayers()); const bounds = L.featureGroup(lines).getBounds(); if (bounds.isValid()) map.fitBounds(bounds, { padding: [35, 35], maxZoom: 14 }); }
+      if (fitMap && state.routeLines.length) { const lines = state.routeLines.flatMap((group) => group.getLayers()); const bounds = L.featureGroup(lines).getBounds(); if (bounds.isValid()) map.fitBounds(bounds, { padding: [24, 24], maxZoom: 15 }); }
       els.mapHeading.textContent = selectedNames.length <= 3 ? selectedNames.join(', ') : `${selectedNames.length} routes selected`;
     } else els.mapHeading.textContent = 'No routes selected';
     renderRouteStyles();
@@ -319,7 +324,7 @@ export function createMapView(state, onRouteSelectionChange) {
 
   function updateBusHighlights() {
     const term = els.busSearch.value.trim().toLowerCase();
-    for (const vehicle of state.vehicles) { const number = normalizeVehicleName(vehicle.vehicle || vehicle.route || '').number; vehicle.searchMatch = Boolean(term) && number.toLowerCase() === term; }
+    for (const vehicle of state.vehicles) { const number = normalizeVehicleName(vehicle.vehicle || vehicle.route || '').number; vehicle.searchMatch = Boolean(term) && number.toLowerCase() === term.toLowerCase(); }
   }
 
   return { applyFilters, drawVehicles, drawSigns, renderRoutePicker, sortedRouteNames, stopsWithRoutes, syncLayers, updateBusHighlights, viewportWidthFeet };
