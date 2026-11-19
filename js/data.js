@@ -175,23 +175,38 @@ export function createDataService() {
       recordFilter = `(${recordFilter} OR (\`record_type\` = "Historical" AND \`order_completed_on_date\` >= "${since}T00:00:00"))`;
     }
 
-    const query = `SELECT ${fields.map((field) => `\`${field}\``).join(', ')} ` +
-      `WHERE ${recordFilter} ` +
+    const selectFields = `SELECT ${fields.map((field) => `\`${field}\``).join(', ')}`;
+    const spatialQuery = `${selectFields} WHERE ${recordFilter} ` +
       `AND \`sign_x_coord\`::number BETWEEN ${minX} AND ${maxX} ` +
       `AND \`sign_y_coord\`::number BETWEEN ${minY} AND ${maxY} LIMIT ${CONFIG.streetSignsLimit}`;
-    const url = new URL(CONFIG.streetSignsUrl);
-    url.searchParams.set('$query', query);
-    const rows = await fetchJson(url, { signal });
+    const spatialUrl = new URL(CONFIG.streetSignsUrl);
+    spatialUrl.searchParams.set('$query', spatialQuery);
+    const rows = await fetchJson(spatialUrl, { signal });
 
-    return rows.map((row) => {
-      const x = Number(row.sign_x_coord);
-      const y = Number(row.sign_y_coord);
-      if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+    // Pull every sign associated with orders represented in this viewport, including records without coordinates.
+    const orderNumbers = [...new Set(rows.map((row) => String(row.order_number ?? '').trim()).filter(Boolean))];
+    const allRows = [...rows];
+    const quoteSoql = (value) => `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+    for (let i = 0; i < orderNumbers.length; i += 50) {
+      const orderBatch = orderNumbers.slice(i, i + 50).map(quoteSoql).join(', ');
+      const orderQuery = `${selectFields} WHERE ${recordFilter} AND \`order_number\` IN (${orderBatch}) LIMIT 50000`;
+      const orderUrl = new URL(CONFIG.streetSignsUrl);
+      orderUrl.searchParams.set('$query', orderQuery);
+      allRows.push(...await fetchJson(orderUrl, { signal }));
+    }
+
+    const uniqueRows = [...new Map(allRows.map((row) => [JSON.stringify(row), row])).values()];
+    return uniqueRows.map((row) => {
+      const x = row.sign_x_coord == null || String(row.sign_x_coord).trim() === '' ? NaN : Number(row.sign_x_coord);
+      const y = row.sign_y_coord == null || String(row.sign_y_coord).trim() === '' ? NaN : Number(row.sign_y_coord);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return { ...row, latitude: null, longitude: null };
       const [longitude, latitude] = projectStatePlaneToLngLat(x, y);
       if (!Number.isFinite(latitude) || !Number.isFinite(longitude) ||
-        latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) return null;
+        latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+        return { ...row, latitude: null, longitude: null };
+      }
       return { ...row, latitude, longitude };
-    }).filter(Boolean);
+    });
   }
 
   return { loadNetwork, loadAceRoutes, loadVehicles, loadStreetSigns };
