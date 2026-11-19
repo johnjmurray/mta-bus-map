@@ -76,7 +76,7 @@ export function createMapView(state, onRouteSelectionChange) {
   function normalizeLines(coordinates) {
     if (!Array.isArray(coordinates) || !coordinates.length) return [];
     const isPosition = (value) => Array.isArray(value) && value.length >= 2 &&
-      Number.isFinite(Number(value[0])) && Number.isFinite(Number(value[1]));
+      Number.isFinite(Number(value[0])) && Number.isFinite(Number(value[1])));
     let lines;
     if (isPosition(coordinates[0])) lines = [coordinates];
     else if (Array.isArray(coordinates[0]) && isPosition(coordinates[0][0])) lines = coordinates;
@@ -171,7 +171,13 @@ export function createMapView(state, onRouteSelectionChange) {
       const routes = [...stop.servedRoutes].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
       const routeText = routes.length ? routes.map(escapeHtml).join(', ') : 'Not specified';
       const details = `<strong>${escapeHtml(stop.stop_name || 'Bus stop')}</strong><br>Stop ${escapeHtml(stop.stop_id || '—')}<br>Routes: ${routeText}`;
-      L.rectangle([ [stop.latlng[0] - 0.000025, stop.latlng[1] - 0.000025], [stop.latlng[0] + 0.000025, stop.latlng[1] + 0.000025] ], { color: '#25364a', weight: 1.5, fill: false, opacity: 0.95 }).bindTooltip(details, { direction: 'top', opacity: 0.96 }).bindPopup(details).addTo(layers.stops);
+      L.rectangle([
+        [stop.latlng[0] - 0.000025, stop.latlng[1] - 0.000050],
+        [stop.latlng[0] + 0.000025, stop.latlng[1] + 0.000050]
+      ], { color: '#25364a', weight: 1.5, fill: false, opacity: 0.95 })
+        .bindTooltip(details, { direction: 'top', opacity: 0.96 })
+        .bindPopup(details)
+        .addTo(layers.stops);
     }
   }
 
@@ -228,24 +234,12 @@ export function createMapView(state, onRouteSelectionChange) {
 
   function signCode(sign) { return String(sign.sign_code || '').trim().toUpperCase(); }
 
-  function buildSignIcon(sign) {
+  function signMarkerStyle(sign) {
     const code = signCode(sign);
-    const arrow = String(sign.arrow_direction || '').trim().toUpperCase();
-    const base = { iconSize: [20, 20], iconAnchor: [10, 10], popupAnchor: [0, -10], className: 'dot-sign-marker-wrapper' };
-
-    if (code.startsWith('SI')) {
-      return L.divIcon({ ...base, iconSize: [24, 10], iconAnchor: [12, 5], html: '<div class="dot-sign-si"></div>' });
-    }
-    if (code === 'SP-477BA') {
-      return L.divIcon({ ...base, html: `<div class="dot-sign-477 dot-sign-477-ba arrow-${arrow}"><span class="single-arrow"></span></div>` });
-    }
-    if (code === 'SP-477B') {
-      return L.divIcon({ ...base, html: '<div class="dot-sign-477 dot-sign-477-b"><span class="double-arrow"></span></div>' });
-    }
-    if (code.startsWith('PS')) {
-      return L.divIcon({ ...base, html: '<div class="dot-sign-ps"></div>' });
-    }
-    return L.divIcon({ ...base, html: '<div class="dot-sign-default"></div>' });
+    if (code.startsWith('SI')) return { radius: 6, fillColor: '#add8e6', color: '#ffffff', fillOpacity: 0.8, opacity: 0.8, weight: 2 };
+    if (code.startsWith('SP')) return { radius: 6, fillColor: '#1f3a5f', color: '#ff0000', fillOpacity: 0.8, opacity: 0.8, weight: 2 };
+    if (code.startsWith('PS')) return { radius: 6, fillColor: '#8b0000', color: '#ffffff', fillOpacity: 0.8, opacity: 0.8, weight: 2 };
+    return { radius: 6, fillColor: '#697586', color: '#ffffff', fillOpacity: 0.8, opacity: 0.8, weight: 2 };
   }
 
   function drawSigns() {
@@ -253,7 +247,7 @@ export function createMapView(state, onRouteSelectionChange) {
     state.signMarkers = new Map();
     for (const sign of state.signs) {
       const details = signTooltip(sign);
-      const marker = L.marker([sign.latitude, sign.longitude], { icon: buildSignIcon(sign) })
+      const marker = L.circleMarker([sign.latitude, sign.longitude], signMarkerStyle(sign))
         .bindTooltip(details, { direction: 'top', sticky: true, opacity: 0.96 })
         .bindPopup(details)
         .addTo(layers.signs);
