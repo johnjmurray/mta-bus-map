@@ -23,6 +23,16 @@
     return lines[1]?.split('|').at(-1)?.trim() || '';
   }
 
+  function removeParentheticalText(content) {
+    const container = document.createElement('div');
+    container.innerHTML = String(content ?? '');
+    const description = container.querySelector('strong');
+    if (description) {
+      description.textContent = description.textContent.replace(/\s*\([^)]*\)/g, '').trim();
+    }
+    return container.innerHTML;
+  }
+
   L.circleMarker = function (latlng, options = {}) {
     const markerOptions = { ...options };
     if (markerOptions.fillColor === BUS_STOP_FILL && Number.isFinite(markerOptions.radius)) {
@@ -52,11 +62,12 @@
       const isSign = /\bside of\b/i.test(text) && /\|\s*(?:current|historical)\s*\|/i.test(text);
       if (!isSign) return originalBindTooltip.call(this, content, tooltipOptions);
 
+      const tooltipContent = removeParentheticalText(content);
       if (/\|\s*historical\s*\|/i.test(text)) {
         this.setStyle({ fillColor: '#808080', fillOpacity: 0.25 });
       }
       if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return this;
-      return originalBindTooltip.call(this, content, tooltipOptions);
+      return originalBindTooltip.call(this, tooltipContent, tooltipOptions);
     };
     return marker;
   };
