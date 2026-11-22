@@ -3,6 +3,7 @@
   if (!window.L?.circleMarker) return;
 
   const originalCircleMarker = L.circleMarker;
+  const originalRectangle = L.rectangle;
   const BUS_STOP_FILL = '#25364a';
   const DOT_SIGN_FILL = '#f0a52b';
 
@@ -34,6 +35,27 @@
     const originalBindTooltip = marker.bindTooltip;
     marker.bindTooltip = function (content, tooltipOptions) {
       this.setStyle({ fillColor: colorForSignCode(signCodeFromTooltip(content)) });
+      return originalBindTooltip.call(this, content, tooltipOptions);
+    };
+    return marker;
+  };
+
+  // Sign and stop shapes are both rectangles; identify signs from their tooltip content so
+  // mobile devices get only the tap popup, while desktop pointers retain the hover tooltip.
+  L.rectangle = function (bounds, options = {}) {
+    const marker = originalRectangle.call(this, bounds, options);
+    const originalBindTooltip = marker.bindTooltip;
+    marker.bindTooltip = function (content, tooltipOptions) {
+      const container = document.createElement('div');
+      container.innerHTML = String(content ?? '');
+      const text = container.textContent || '';
+      const isSign = /\bside of\b/i.test(text) && /\|\s*(?:current|historical)\s*\|/i.test(text);
+      if (!isSign) return originalBindTooltip.call(this, content, tooltipOptions);
+
+      if (/\|\s*historical\s*\|/i.test(text)) {
+        this.setStyle({ fillColor: '#808080', fillOpacity: 0.25 });
+      }
+      if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return this;
       return originalBindTooltip.call(this, content, tooltipOptions);
     };
     return marker;

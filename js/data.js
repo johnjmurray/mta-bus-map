@@ -200,7 +200,19 @@ export function createDataService() {
       const x = row.sign_x_coord == null || String(row.sign_x_coord).trim() === '' ? NaN : Number(row.sign_x_coord);
       const y = row.sign_y_coord == null || String(row.sign_y_coord).trim() === '' ? NaN : Number(row.sign_y_coord);
       if (!Number.isFinite(x) || !Number.isFinite(y)) return { ...row, latitude: null, longitude: null };
-      const [longitude, latitude] = projectStatePlaneToLngLat(x, y);
+
+      // State Plane coordinates use US survey feet, so cardinal offsets and dither can be applied directly.
+      let correctedX = x;
+      let correctedY = y;
+      const side = String(row.side_of_street ?? '').trim().toUpperCase();
+      if (side.startsWith('N')) correctedY += 9;
+      else if (side.startsWith('S')) correctedY -= 9;
+      else if (side.startsWith('E')) correctedX += 9;
+      else if (side.startsWith('W')) correctedX -= 9;
+      correctedX += Math.random() * 6 - 3;
+      correctedY += Math.random() * 6 - 3;
+
+      const [longitude, latitude] = projectStatePlaneToLngLat(correctedX, correctedY);
       if (!Number.isFinite(latitude) || !Number.isFinite(longitude) ||
         latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
         return { ...row, latitude: null, longitude: null };
