@@ -11,25 +11,19 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
     <link rel="stylesheet" href="styles.css">
     <style>
-      .app-shell { display: block; position: relative; width: 100%; height: 100vh; min-height: 360px; padding: 0; background: transparent; }
-      .map-panel { position: absolute; inset: 0; width: 100%; height: 100%; }
-      .sidebar { position: fixed; z-index: 1200; inset: 0 auto 0 0; width: min(350px, calc(100vw - 48px)); max-width: 100%; height: 100dvh; min-height: 0; padding: 22px 21px 16px; overflow-x: hidden; overflow-y: auto; box-shadow: 12px 0 36px rgba(0,0,0,.4); transform: translateX(0); transition: transform 220ms ease; }
-      .sidebar.drawer-closed { transform: translateX(-105%); visibility: hidden; pointer-events: none; }
-      .drawer-toggle { position: absolute; z-index: 1100; top: 16px; left: 16px; display: inline-flex; min-height: 42px; align-items: center; gap: 9px; padding: 0 14px; border: 1px solid #46566d; color: #eef3fb; background: rgba(24,33,44,.96); box-shadow: 0 3px 12px rgba(0,0,0,.24); cursor: pointer; font-weight: 700; }
-      .drawer-toggle:hover { background: #26364a; }
-      .drawer-toggle[hidden], .drawer-backdrop[hidden] { display: none; }
-      .drawer-backdrop { position: fixed; z-index: 1150; inset: 0; background: rgba(0,0,0,.48); }
-      .drawer-close { display: none; width: 36px; height: 36px; margin-left: auto; border: 1px solid #46505c; color: #e6e9ed; background: #202832; cursor: pointer; font-size: 22px; }
-      .sidebar.drawer-open .drawer-close { display: block; }
-      .sidebar > .brand { position: relative; }
-      .sidebar.drawer-open > .brand .drawer-close { position: absolute; top: 0; right: 0; }
-      @media (max-width: 760px) {
-        .app-shell { display: block; grid-template-columns: none; grid-template-rows: none; height: 100vh; min-height: 360px; }
-        .sidebar { display: flex; grid-template-columns: none; }
-        .map-topbar { left: 76px; }
-        .sign-sidebar { width: min(330px, calc(100vw - 32px)); }
-      }
-      @media (prefers-reduced-motion: reduce) { .sidebar { transition: none; } }
+      .app-shell { display:block; position:relative; width:100%; height:100vh; min-height:360px; padding:0; background:transparent; }
+      .map-panel { position:absolute; inset:0; width:100%; height:100%; }
+      .sidebar { position:fixed; z-index:1200; inset:0 auto 0 0; width:min(350px, calc(100vw - 48px)); max-width:100%; height:100dvh; min-height:0; padding:22px 21px 16px; overflow-x:hidden; overflow-y:auto; transform:translateX(0); visibility:visible; transition:transform .22s ease, visibility .22s; }
+      .sidebar.drawer-closed { transform:translateX(-105%); visibility:hidden; pointer-events:none; }
+      .drawer-toggle { position:absolute; z-index:1100; top:16px; left:16px; display:inline-flex; min-height:42px; align-items:center; gap:9px; padding:0 14px; border:1px solid #46566d; color:#e6e9ed; background:#18212c; cursor:pointer; font-size:12px; font-weight:700; }
+      .drawer-toggle[hidden], .drawer-backdrop[hidden] { display:none; }
+      .drawer-backdrop { position:fixed; z-index:1150; inset:0; background:rgba(0,0,0,.48); }
+      .drawer-close { display:none; width:36px; height:36px; margin-left:auto; border:1px solid #46505c; color:#e6e9ed; background:#202832; cursor:pointer; font-size:22px; }
+      .sidebar.drawer-open .drawer-close { display:block; }
+      .sidebar > .brand { position:relative; }
+      .sidebar.drawer-open > .brand .drawer-close { position:absolute; top:0; right:0; }
+      @media (max-width:760px) { .app-shell { display:block; height:100vh; min-height:360px; }.sidebar { display:flex; }.map-topbar { left:76px; }.sign-sidebar { width:min(330px, calc(100vw - 32px)); } }
+      @media (prefers-reduced-motion:reduce) { .sidebar { transition:none; } }
     </style>
   </head>
   <body>
@@ -52,7 +46,7 @@
         <section class="control-section key-section">
           <h2 class="section-title">Live bus access</h2>
           <p>Enter your MTA Bus Time API key to enable live positions. It is used only for this visit.</p>
-          <form id="api-key-form"><label class="sr-only" for="api-key">MTA Bus Time API key</label><input id="api-key" type="password" placeholder="MTA Bus Time API key" autocomplete="off" required><button class="ace-button" type="submit">Enable live buses</button></form>
+          <form id="api-key-form"><label class="sr-only" for="api-key">MTA Bus Time API key</label><input id="api-key" type="password" placeholder="MTA Bus Time API key" autocomplete="off" required><button class="ace-button" type="submit">Load live buses</button></form>
           <button id="clear-key" class="text-button" type="button" hidden>Clear key</button>
         </section>
         <section class="control-section layers-section">
@@ -61,23 +55,20 @@
           <label class="layer-row"><span class="layer-symbol stop-symbol" aria-hidden="true"></span><span class="layer-copy"><strong>Bus stops</strong><small>All stops remain visible</small></span><input id="toggle-stops" type="checkbox" checked><span class="switch" aria-hidden="true"></span></label>
           <label class="layer-row"><span class="layer-symbol vehicle-symbol" aria-hidden="true"></span><span class="layer-copy"><strong>Live buses</strong><small>Refreshes every 5 minutes</small></span><input id="toggle-vehicles" type="checkbox" checked><span class="switch" aria-hidden="true"></span></label>
           <label class="layer-row"><span class="layer-symbol sign-symbol" aria-hidden="true"></span><span class="layer-copy"><strong>Street signs</strong><small>NYC DOT work order signs</small></span><input id="toggle-signs" type="checkbox"><span class="switch" aria-hidden="true"></span></label>
-          <div class="sign-control"><button id="fetch-signs" type="button">Fetch signs in current view</button><p id="signs-status" aria-live="polite">Signs are loaded only when requested. Zoom in to a view no more than 1,000 ft wide.</p></div>
+          <div class="sign-control"><button id="fetch-signs" type="button">Fetch signs in current view</button><p id="signs-status" aria-live="polite">Signs are loaded only when requested. Zoom in to enable this control.</p></div>
         </section>
-        <section class="stats" aria-label="Map data counts"><div><strong id="route-count">—</strong><span>routes</span></div><div><strong id="stop-count">—</strong><span>stops</span></div><div><strong id="vehicle-count">0</strong><span>buses shown</span></div></section>
-        <section class="feed-status" aria-live="polite"><span id="status-indicator" class="status-dot loading"></span><div><strong id="status-title">Connecting to MTA data</strong><p id="status-message">Loading route and stop information…</p></div></section>
+        <section class="stats" aria-label="Map data counts"><div><strong id="route-count">—</strong><span>routes</span></div><div><strong id="stop-count">—</strong><span>stops</span></div><div><strong id="vehicle-count">0</strong><span>buses</span></div></section>
+        <section class="feed-status" aria-live="polite"><span id="status-indicator" class="status-dot loading"></span><div><strong id="status-title">Connecting to MTA data</strong><p id="status-message">Loading routes and stops…</p></div></section>
+        <div id="last-updated" class="updated-label">Waiting for data</div>
         <button id="refresh-button" class="refresh-button" type="button"><span aria-hidden="true">↻</span> Refresh data</button>
         <footer><span class="live-pulse"></span> Live map <span class="footer-divider">·</span> NYC buses</footer>
       </aside>
       <div id="drawer-backdrop" class="drawer-backdrop" hidden></div>
       <section class="map-panel" aria-label="Map of MTA buses and street signs">
         <button id="open-controls-drawer" class="drawer-toggle" type="button" aria-controls="map-controls-drawer" aria-expanded="false"><span aria-hidden="true">☰</span> Map controls</button>
-        <div class="map-topbar"><div><span class="map-kicker">MTA BUS NETWORK</span><strong id="map-heading">New York City</strong></div><div class="updated-label"><span class="live-pulse"></span><span id="last-updated">Waiting for data</span></div></div>
+        <div class="map-topbar"><div><span class="map-kicker">MTA BUS NETWORK</span><strong id="map-heading">New York City</strong></div><div class="updated-label"><span class="live-pulse"></span> Live map</div></div>
         <div id="map" role="application" aria-label="Interactive map showing MTA bus routes, stops, buses, and requested street signs"></div>
-        <aside id="sign-sidebar" class="sign-sidebar" aria-label="Returned street signs" hidden>
-          <header><div><span class="sign-sidebar-kicker">NYC DOT</span><h2>Street signs</h2></div><button id="close-sign-sidebar" type="button" aria-label="Close sign results">×</button></header>
-          <div id="sign-sidebar-summary" class="sign-sidebar-summary"></div>
-          <div id="sign-sidebar-list" class="sign-sidebar-list"></div>
-        </aside>
+        <aside id="sign-sidebar" class="sign-sidebar" aria-label="Returned street signs" hidden><header><div><span class="sign-sidebar-kicker">NYC DOT</span><h2>Street signs</h2></div><button id="close-sign-sidebar" type="button" aria-label="Close sign results">×</button></header><div id="sign-sidebar-summary" class="sign-sidebar-summary"></div><div id="sign-sidebar-list" class="sign-sidebar-list"></div></aside>
         <div class="map-attribution-note">Map data © OpenStreetMap contributors</div>
       </section>
     </main>
@@ -88,26 +79,21 @@
         const closeButton = document.querySelector('#close-controls-drawer');
         const backdrop = document.querySelector('#drawer-backdrop');
         function setDrawerOpen(open, returnFocus = false) {
-          drawer.classList.toggle('drawer-closed', !open);
-          drawer.classList.toggle('drawer-open', open);
-          drawer.setAttribute('aria-hidden', String(!open));
-          drawer.inert = !open;
-          openButton.setAttribute('aria-expanded', String(open));
-          backdrop.hidden = !open;
-          if (open) closeButton.focus();
-          else if (returnFocus) openButton.focus();
+          drawer.classList.toggle('drawer-closed', !open); drawer.classList.toggle('drawer-open', open);
+          drawer.setAttribute('aria-hidden', String(!open)); drawer.inert = !open;
+          openButton.setAttribute('aria-expanded', String(open)); backdrop.hidden = !open;
+          if (open) closeButton.focus(); else if (returnFocus) openButton.focus();
         }
         openButton.addEventListener('click', () => setDrawerOpen(true));
         closeButton.addEventListener('click', () => setDrawerOpen(false, true));
         backdrop.addEventListener('click', () => setDrawerOpen(false, true));
-        document.addEventListener('keydown', (event) => {
-          if (event.key === 'Escape' && !drawer.classList.contains('drawer-closed')) setDrawerOpen(false, true);
-        });
+        document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && !drawer.classList.contains('drawer-closed')) setDrawerOpen(false, true); });
       })();
     </script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="https://unpkg.com/proj4@2.11.0/dist/proj4.js"></script>
     <script src="js/marker-enhancements.js"></script>
+    <script type="module" src="js/ui-fixes.js"></script>
     <script type="module" src="app.js"></script>
   </body>
 </html>
