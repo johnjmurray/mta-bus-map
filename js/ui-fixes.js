@@ -1,6 +1,8 @@
 import { map } from './config.js';
 const OSM_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-const CARTO_URL = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+//const CARTO_URL = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+const CARTO_URL = 'https://basemaps.cartocdn.com/rastertiles/voyager/15/16046/12355.png';
+
 const OSM_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 const CARTO_ATTRIBUTION = '&copy; <a href="https://carto.com/attributions">CARTO</a>, &copy; OpenStreetMap contributors';
 
